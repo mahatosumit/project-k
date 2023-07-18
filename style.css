@@ -1,0 +1,202 @@
+/* Google Font CDN Link */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=Ubuntu:wght@400;500;700&display=swap');
+
+* {
+    margin: 0px;
+    padding: 0px;
+}
+
+body {
+    background-color: rgb(2, 2, 65);
+    color: white;
+}
+
+.tophead {
+    background: wheat;
+    display: flex;
+    justify-content: space-between;
+}
+
+.left {
+    display: flex;
+}
+.left ul {
+    display: flex;
+    align-items: center;
+}
+.left li a{
+    list-style-type: none;
+    text-decoration: none;
+    color: black;
+    margin-left: 10px;
+    padding: 10px;
+    
+}
+.right{
+    display: flex;
+}
+.right ul {
+    display: flex;
+    
+}
+
+.right li{
+list-style-type: none;
+color: black;
+margin-right: 10px;
+padding: 10px;
+
+}
+/* nav {
+    display: flex;
+    height: 90px;
+    background: #03035f;
+    font-family: 'Ubuntu', sans-serif;
+    color: aquamarine;
+} */
+.navigation {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 90px;
+    background: #03035f;
+    font-family: 'Ubuntu', sans-serif;
+    color: aquamarine;
+}
+.logo {
+    font-size: 40px;
+    font-weight: 600;
+    margin: 0 16px;
+}
+.menu {
+    display: flex;
+    justify-content: space-between;
+}
+.menu a:hover{
+    color: #0d11e4;
+}
+.menu ul {
+display: flex;
+justify-content: space-between;
+list-style-type: none;
+}
+.menu li a{
+padding-right: 40px;
+color: aquamarine;
+text-decoration: none;
+
+
+}
+
+header a:hover {
+    color: #b2dfdb;
+}
+.container {
+   background-position: center;
+   background-repeat: no-repeat;
+   background-size: cover;
+   height: 500px;
+    background-image: url("https://t3.ftcdn.net/jpg/05/05/61/98/360_F_505619836_Y0XifG4GvHzPy5tmYutV333PlAIATQj3.jpg");
+   display: flex;
+justify-content: end;
+   align-items: center;
+padding: 30px;
+   
+}
+.hero-text {
+    text-align: center;
+    line-height: 50px;
+}
+.hero-text h1 {
+    font-size: 50px;
+    font-weight: 500;
+}
+.hero-text p {
+    font-size: 20px;
+    font-weight: 500;
+}
+.hero-btn {
+    text-decoration: none;
+    color: white;
+    background: #5e5eda;
+    padding: 5px;
+    border-radius: 3px;
+}
+.hero-btn:hover{
+    background: #03035f;
+}
+.serving {
+    display: flex;
+    justify-content: space-between;
+}
+.serve img {
+    width: 280px;
+    height: 300px;
+}
+.serve{
+    width: 300px;
+    margin: 20px 20px;
+    display: inline;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+}
+.services hr{
+    height: 2px solid white;
+    margin: 10px 200px;
+   
+}
+
+.services h1 {
+    text-align: center;
+    font-size: 40px;
+    font-weight: 400;
+}
+.contact{
+    background: #5e5eda;
+}
+.contact hr{
+    height: 2px solid white;
+    margin: 10px 200px;
+   
+}
+.contact h1 {
+    text-align: center;
+    font-size: 40px;
+    font-weight: 400;
+}
+footer {
+    background:rgb(53 53 177);
+}
+.footer {
+    display: flex;
+    margin: 0 122px;
+    justify-content: space-between;
+    padding: 20px;
+}
+.footer li {
+    text-align: center;
+    padding: 4px 0;
+    list-style: none;
+    justify-content: space-around;
+}
+.footer > div {
+    width: 210px;
+}
+footer hr {
+    background-color: rgb(69, 69, 235);
+    height: 2px;
+    margin: 20px 200px;
+}
+.text-center {
+    text-align: center;
+    padding: 20px;
+    justify-content: center;
+}
+/* media query for width <= 1024 */
+@media  screen and(max-width:1024) {
+    .container1{
+        flex-direction: column;
+    }
+    
+}
