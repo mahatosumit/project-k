@@ -1,0 +1,34 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vasool",
+  "main": "cloudflare/worker.py",
+  "compatibility_date": "2026-09-08",
+  "compatibility_flags": [
+    "python_workers"
+  ],
+  "triggers": {
+    "crons": [
+      "*/5 * * * *"
+    ]
+  },
+  "vars": {
+    "APP_ENV": "staging",
+    "APP_NAME": "Vasool",
+    "BASE_URL": "https://vasool.example.in",
+    "PAYMENT_PROVIDER": "razorpay",
+    "PAYMENT_MODE": "sandbox",
+    "MESSAGING_PROVIDER": "console",
+    "SAC_CODE_DEFAULT": "998314",
+    "ENABLE_HSTS": "1",
+    "RBI_BANK_RATE_PERCENT": "0",
+    "CERT_IN_REPORT_HOURS": "6",
+    "LOG_RETENTION_DAYS": "180"
+  }
+  // Hyperdrive configuration for PostgreSQL connection pooling:
+  // "hyperdrive": [
+  //   {
+  //     "binding": "HYPERDRIVE",
+  //     "id": "<YOUR_HYPERDRIVE_CONFIG_ID>"
+  //   }
+  // ]
+}
