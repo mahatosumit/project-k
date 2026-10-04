@@ -8,7 +8,8 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from cloudflare.worker import Default, app as worker_app, sync_cloudflare_env
+from worker import Default, app as worker_app, sync_cloudflare_env
+import cloudflare.worker as cf_worker_module
 
 
 def test_cloudflare_worker_exports():
@@ -16,6 +17,8 @@ def test_cloudflare_worker_exports():
     assert Default is not None
     assert worker_app is not None
     assert callable(sync_cloudflare_env)
+    assert cf_worker_module.Default is not None
+    assert cf_worker_module.app is not None
 
 
 def test_sync_cloudflare_env(monkeypatch):
