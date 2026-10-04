@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}{{ invoice.invoice_number }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="spread">
+  <div>
+    <h1>{{ invoice.invoice_number }}</h1>
+    <p class="muted small">
+      {{ customer.name if customer else '—' }} ·
+      {{ t('inv.issue_date') }} {{ fmt_date(invoice.issue_date) }} ·
+      {{ t('inv.due') }} {{ fmt_date(invoice.due_date) }}
+    </p>
+  </div>
+  <div class="row-tight">
+    <a class="btn btn-secondary btn-small" href="/app/invoices/{{ invoice.id }}/print">{{ t('inv.print') }}</a>
+    <a class="btn btn-secondary btn-small" href="/app/invoices/{{ invoice.id }}/reminders/preview">{{ t('inv.preview') }}</a>
+  </div>
+</div>
+
+{% if portal_path %}
+  <div class="card card-flat" style="margin-top:1rem">
+    <div class="stat-label">{{ t('inv.pay_link') }}</div>
+    <p class="mono small" style="word-break:break-all;margin:.3rem 0 0">{{ settings.base_url }}{{ portal_path }}</p>
+    <p class="field-help">
+      Send this to your customer, or let the reminder ladder send it for you. It opens only
+      this invoice and needs no login. Anyone with the link can see the amount and pay it,
+      so share it the way you would share a payment request.
+    </p>
+  </div>
+{% endif %}
+
+{% if invoice.status == 'draft' %}
+  <div class="alert alert-warn">
+    This invoice is still a draft. Nothing has been sent and no reminders are scheduled.
+    <form method="post" action="/app/invoices/{{ invoice.id }}/issue" class="inline-form" style="margin-top:.6rem">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-small" type="submit">{{ t('inv.issue') }}</button>
+    </form>
+  </div>
+{% endif %}
+
+{% if request.query_params.get('error') %}
+  <div class="alert alert-error">
+    {% if request.query_params.get('error') == 'ledger' %}That payment does not fit the amount outstanding. Check the figure and try again.
+    {% elif request.query_params.get('error') == 'reason' %}A reason is required when writing off a balance. Write-offs are permanent records.
+    {% else %}That amount could not be read. Enter a number like 24000 or 24,000.50.{% endif %}
+  </div>
+{% endif %}
+
+<section class="grid grid-3 section">
+  <div class="stat">
+    <div class="stat-label">{{ t('inv.total') }}</div>
+    <div class="stat-value">{{ money(invoice.total_paise) }}</div>
+    <div class="stat-note">{{ words }}</div>
+  </div>
+  <div class="stat {% if outstanding_paise and days_overdue %}stat-alert{% endif %}">
+    <div class="stat-label">{{ t('inv.outstanding') }}</div>
+    <div class="stat-value">{{ money(outstanding_paise) }}</div>
+    <div class="stat-note">
+      {% if outstanding_paise == 0 %}Settled
+      {% elif days_overdue %} {{ days_overdue }} days past due
+      {% else %} Not yet due {% endif %}
+    </div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">{{ t('inv.stage') }}</div>
+    <div class="stat-value" style="font-size:1.15rem">{{ stage_label(stage) }}</div>
+    <div class="stat-note"><span class="badge badge-{{ invoice.status }}">{{ invoice.status.replace('_', ' ') }}</span></div>
+  </div>
+</section>
+
+<section class="section card">
+  <h2>{{ t('inv.tax_breakup') }}</h2>
+  <dl class="kv">
+    <dt>{{ t('inv.taxable_value') }}</dt><dd>{{ money(invoice.taxable_value_paise) }}</dd>
+    {% if invoice.discount_paise %}<dt>{{ t('inv.discount') }}</dt><dd>− {{ money(invoice.discount_paise) }}</dd>{% endif %}
+    {% if invoice.igst_paise %}
+      <dt>{{ t('inv.igst') }} @ {{ invoice.gst_rate_percent }}%</dt><dd>{{ money(invoice.igst_paise) }}</dd>
+    {% elif invoice.cgst_paise or invoice.sgst_paise %}
+      <dt>{{ t('inv.cgst') }}</dt><dd>{{ money(invoice.cgst_paise) }}</dd>
+      <dt>{{ t('inv.sgst') }}</dt><dd>{{ money(invoice.sgst_paise) }}</dd>
+    {% else %}
+      <dt>Tax</dt><dd>Not registered for GST — no tax charged</dd>
+    {% endif %}
+    <dt><strong>{{ t('inv.total') }}</strong></dt><dd><strong>{{ money(invoice.total_paise) }}</strong></dd>
+  </dl>
+  <hr class="divider">
+  <dl class="kv">
+    <dt>SAC</dt><dd>{{ invoice.sac_code }}</dd>
+    <dt>{{ t('inv.place_of_supply') }}</dt><dd>{{ invoice.place_of_supply_state_code or '—' }}{% if pos_name %} · {{ pos_name }}{% endif %}</dd>
+    <dt>Tax type</dt><dd>{{ 'Inter-state (IGST)' if invoice.is_interstate else 'Intra-state (CGST+SGST)' }}{% if not org.gst_registered %} · unregistered{% endif %}</dd>
+    {% if invoice.description %}<dt>Description</dt><dd>{{ invoice.description }}</dd>{% endif %}
+  </dl>
+</section>
+
+<section class="section card">
+  <div class="spread">
+    <h2>{{ t('inv.schedule') }}</h2>
+    <a class="small" href="/app/invoices/{{ invoice.id }}/reminders/preview">{{ t('inv.preview') }}</a>
+  </div>
+  {% if history %}
+    <ul class="timeline">
+      {% for rem in history %}
+        <li class="{% if rem.status == 'sent' %}done{% elif rem.status in ['needs_human', 'blocked_no_consent'] %}needs-human{% elif rem.status == 'failed' %}due{% endif %}">
+          <div class="spread">
+            <span>
+              <strong>{{ fmt_date(rem.scheduled_for.date()) }}</strong>
+              · {{ rem.stage.replace('_', ' ') }}
+              · <span class="muted">{{ rem.channel }}</span>
+            </span>
+            <span class="badge badge-{{ 'paid' if rem.status == 'sent' else 'partly_paid' if rem.status == 'scheduled' else 'overdue' }}">
+              {{ rem.status.replace('_', ' ') }}
+            </span>
+          </div>
+          {% if rem.message_body %}
+            <details style="margin-top:.4rem">
+              <summary class="small">Message</summary>
+              <div class="preview-box" style="margin-top:.4rem">{{ rem.message_body }}</div>
+            </details>
+          {% endif %}
+          {% if rem.error %}<div class="small" style="color:var(--warn)">{{ rem.error }}</div>{% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">No reminders scheduled. Issue the invoice to start the ladder.</p>
+  {% endif %}
+  {% if outstanding_paise > 0 and invoice.status != 'draft' %}
+    <form method="post" action="/app/invoices/{{ invoice.id }}/reminders/send-now">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-secondary btn-small" type="submit">{{ t('inv.send_next') }}</button>
+    </form>
+  {% endif %}
+</section>
+
+{% if outstanding_paise > 0 %}
+<section class="section card">
+  <h2>{{ t('inv.record_payment') }}</h2>
+  <form method="post" action="/app/invoices/{{ invoice.id }}/payment">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="amount">{{ t('inv.amount') }}</label>
+        <input type="text" id="amount" name="amount" inputmode="decimal" required
+               value="{{ money_plain(outstanding_paise) }}">
+      </div>
+      <div class="field">
+        <label for="method">{{ t('inv.payment_method') }}</label>
+        <select id="method" name="method">
+          <option value="upi">UPI</option>
+          <option value="bank_transfer">Bank transfer / NEFT / RTGS</option>
+          <option value="cash">Cash</option>
+          <option value="cheque">Cheque</option>
+          <option value="card">Card</option>
+          <option value="adjustment">Adjustment against a credit note</option>
+        </select>
+      </div>
+    </div>
+    <div class="grid grid-3">
+      <div class="field">
+        <label for="reference">{{ t('inv.payment_reference') }}</label>
+        <input type="text" id="reference" name="reference" maxlength="120">
+      </div>
+      <div class="field">
+        <label for="utr">{{ t('inv.payment_utr') }}</label>
+        <input type="text" id="utr" name="utr" maxlength="40" inputmode="numeric">
+      </div>
+      <div class="field">
+        <label for="received_on">{{ t('inv.payment_date') }}</label>
+        <input type="date" id="received_on" name="received_on">
+      </div>
+    </div>
+    <button class="btn" type="submit">{{ t('inv.record_payment') }}</button>
+  </form>
+</section>
+{% endif %}
+
+{% if payments %}
+<section class="section">
+  <h2>{{ t('inv.payments') }}</h2>
+  <div class="card card-flat table-scroll">
+    <table>
+      <thead>
+        <tr><th>Date</th><th class="num">Amount</th><th>Method</th><th>Reference</th></tr>
+      </thead>
+      <tbody>
+        {% for p in payments %}
+          <tr>
+            <td class="nowrap">{{ fmt_datetime(p.received_at) }}</td>
+            <td class="num">{{ money(p.amount_paise) }}</td>
+            <td>{{ p.method.replace('_', ' ') }}{% if p.gateway_provider %} · {{ p.gateway_provider }}{% endif %}</td>
+            <td class="small">{{ p.utr or p.reference or '—' }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+{% if outstanding_paise > 0 and invoice.status != 'draft' %}
+<section class="section card">
+  <h2>{{ t('inv.interest_title') }}</h2>
+  {% if interest.verified %}
+    <dl class="kv">
+      <dt>{{ t('inv.outstanding') }}</dt><dd>{{ money(interest.principal_paise) }}</dd>
+      <dt>Days past due</dt><dd>{{ interest.days_overdue }}</dd>
+      <dt>Rate applied</dt><dd>{{ interest.annual_rate_percent }}% p.a.</dd>
+      <dt>Interest</dt><dd>{{ money(interest.compound_interest_paise) }}</dd>
+      <dt><strong>Total claimable</strong></dt><dd><strong>{{ money(interest.total_payable_paise) }}</strong></dd>
+    </dl>
+    <p class="small muted">{{ interest.note }}</p>
+  {% else %}
+    <div class="alert alert-warn" style="margin-bottom:0">{{ t('inv.interest_unverified') }}</div>
+  {% endif %}
+</section>
+
+<section class="section card">
+  <h2>{{ t('inv.evidence_title') }}</h2>
+  <p class="small muted">{{ t('inv.evidence_note') }}</p>
+  <ul>
+    {% for item in checklist %}
+      <li>
+        {{ item.text }}
+        <span class="badge badge-{{ 'overdue' if item.required == 'yes' else 'draft' }}">
+          {{ item.required }}
+        </span>
+      </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if outstanding_paise > 0 and invoice.status in ['issued', 'partly_paid'] %}
+<section class="section card">
+  <h2>{{ t('inv.write_off') }}</h2>
+  <form method="post" action="/app/invoices/{{ invoice.id }}/write-off">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="wo_amount">Amount</label>
+        <input type="text" id="wo_amount" name="amount" inputmode="decimal" value="{{ money_plain(outstanding_paise) }}">
+      </div>
+      <div class="field">
+        <label for="reason">{{ t('inv.write_off_reason') }}</label>
+        <input type="text" id="reason" name="reason" maxlength="500" required>
+      </div>
+    </div>
+    <p class="field-help">Writing off reduces the amount we consider collectable. The ledger keeps the full history.</p>
+    <button class="btn btn-secondary" type="submit">{{ t('inv.write_off') }}</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

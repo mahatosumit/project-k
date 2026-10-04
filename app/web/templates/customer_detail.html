@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ customer.name }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="spread">
+  <div>
+    <h1>{{ customer.name }}</h1>
+    <p class="muted small">
+      {% if customer.contact_name %}{{ customer.contact_name }} · {% endif %}
+      {{ customer.phone_e164 or 'no phone' }} ·
+      {{ customer.email or 'no email' }}
+      {% if customer.gstin %} · <span class="mono">{{ customer.gstin }}</span>{% endif %}
+    </p>
+  </div>
+  <a class="btn" href="/app/invoices/new?customer_id={{ customer.id }}">{{ t('inv.new') }}</a>
+</div>
+
+<section class="grid grid-2 section">
+  <div class="stat">
+    <div class="stat-label">{{ t('cust.outstanding') }}</div>
+    <div class="stat-value">{{ money(outstanding_paise) }}</div>
+    <div class="stat-note">{{ invoices|length }} {{ t('cust.invoices')|lower }}</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">WhatsApp {{ t('common.yes')|lower }}/{{ t('common.no')|lower }}</div>
+    <div class="stat-value" style="font-size:1.15rem">
+      {% if consent %}{{ t('cust.consent_on') }}{% else %}{{ t('cust.consent_off') }}{% endif %}
+    </div>
+    <div class="stat-note">
+      {% if consent %}Reminders may be sent on WhatsApp and SMS.{% else %}We will not send automated WhatsApp or SMS reminders.{% endif %}
+    </div>
+    <form method="post" action="/app/customers/{{ customer.id }}/consent" style="margin-top:.6rem">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      {% if consent %}
+        <input type="hidden" name="grant" value="no">
+        <button class="btn btn-secondary btn-small" type="submit">{{ t('cust.withdraw') }}</button>
+      {% else %}
+        <input type="hidden" name="grant" value="yes">
+        <button class="btn btn-small" type="submit">{{ t('cust.grant') }}</button>
+      {% endif %}
+    </form>
+  </div>
+</section>
+
+<section class="section">
+  <h2>{{ t('cust.invoices') }}</h2>
+  {% if invoices %}
+    <div class="card card-flat table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ t('inv.number') }}</th>
+            <th>{{ t('inv.issue_date') }}</th>
+            <th>{{ t('inv.due') }}</th>
+            <th class="num">{{ t('inv.total') }}</th>
+            <th class="num">{{ t('inv.outstanding') }}</th>
+            <th>{{ t('inv.status') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for inv in invoices %}
+            <tr>
+              <td><a href="/app/invoices/{{ inv.id }}">{{ inv.invoice_number }}</a></td>
+              <td class="nowrap">{{ fmt_date(inv.issue_date) }}</td>
+              <td class="nowrap">{{ fmt_date(inv.due_date) }}</td>
+              <td class="num">{{ money(inv.total_paise) }}</td>
+              <td class="num">{{ money(inv.total_paise - inv.paid_paise - inv.credited_paise - inv.written_off_paise) }}</td>
+              <td><span class="badge badge-{{ inv.status }}">{{ inv.status.replace('_', ' ') }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">{{ t('inv.none') }}</p>
+  {% endif %}
+</section>
+
+{% if customer.notes %}
+  <section class="section card">
+    <h2>{{ t('cust.notes') }}</h2>
+    <p style="white-space:pre-wrap">{{ customer.notes }}</p>
+  </section>
+{% endif %}
+
+<section class="section card">
+  <h2>{{ t('cust.address') }}</h2>
+  <p class="muted">{{ customer.address or '—' }}</p>
+  <a class="small" href="/app/ops/export/customer/{{ customer.id }}">{{ t('ops.export') }}</a>
+</section>
+{% endblock %}

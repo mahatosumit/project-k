@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}{{ t('cust.new') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<h1>{{ t('cust.new') }}</h1>
+
+{% if error %}
+  <div class="alert alert-error">{{ t(error) if t.has(error) else error }}</div>
+{% endif %}
+
+<div class="card">
+  <form method="post" action="/app/customers">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="field">
+      <label for="name">{{ t('cust.name') }} <span class="muted small">(business name)</span></label>
+      <input type="text" id="name" name="name" required maxlength="200" autofocus
+             value="{{ customer.name if customer else '' }}">
+    </div>
+
+    <div class="field">
+      <label for="contact_name">{{ t('cust.contact_name') }} <span class="muted small">({{ t('common.optional') }})</span></label>
+      <input type="text" id="contact_name" name="contact_name" maxlength="200"
+             value="{{ customer.contact_name if customer else '' }}">
+      <p class="field-help">Used to address the person in reminder messages.</p>
+    </div>
+
+    <div class="field">
+      <label for="phone">{{ t('cust.phone') }}</label>
+      <input type="tel" id="phone" name="phone" inputmode="numeric" maxlength="16" placeholder="98765 43210"
+             value="{{ customer.phone_e164 if customer else '' }}">
+    </div>
+
+    <div class="field">
+      <label for="email">{{ t('cust.email') }} <span class="muted small">({{ t('common.optional') }})</span></label>
+      <input type="email" id="email" name="email" maxlength="254" inputmode="email"
+             value="{{ customer.email if customer else '' }}">
+    </div>
+
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="gstin">{{ t('cust.gstin') }} <span class="muted small">({{ t('common.optional') }})</span></label>
+        <input type="text" id="gstin" name="gstin" maxlength="15" class="mono"
+               value="{{ customer.gstin if customer else '' }}" placeholder="27AAPFU0939F1ZV">
+        <p class="field-help">If they have one, the invoice will carry it. That is what they need to claim input credit.</p>
+      </div>
+      <div class="field">
+        <label for="state_code">{{ t('cust.state') }}</label>
+        <select id="state_code" name="state_code">
+          <option value="">— not sure —</option>
+          {% for code, name in states.items() %}
+            <option value="{{ code }}" {% if customer and customer.state_code == code %}selected{% endif %}>{{ code }} · {{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="address">{{ t('cust.address') }} <span class="muted small">({{ t('common.optional') }})</span></label>
+      <input type="text" id="address" name="address" maxlength="400"
+             value="{{ customer.address if customer else '' }}">
+    </div>
+
+    <div class="field checkbox">
+      <input type="checkbox" id="whatsapp_opt_in" name="whatsapp_opt_in" value="1">
+      <label for="whatsapp_opt_in">
+        {{ t('cust.optin') }}
+        <div class="field-help">{{ t('cust.optin_help') }}</div>
+      </label>
+    </div>
+
+    <button class="btn btn-block" type="submit">{{ t('form.save') }}</button>
+  </form>
+</div>
+{% endblock %}

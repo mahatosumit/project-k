@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ invoice.invoice_number }} — {{ org.name }}</title>
+  <link rel="stylesheet" href="/static/app.css?v={{ asset_version }}">
+  <style>
+    body { background: #fff; }
+    .sheet { max-width: 820px; margin: 0 auto; padding: 24px 20px 48px; }
+    .inv-head { display: flex; justify-content: space-between; gap: 1.5rem; flex-wrap: wrap; border-bottom: 2px solid var(--ink); padding-bottom: .8rem; }
+    .inv-title { font-size: 1.4rem; font-weight: 700; letter-spacing: .02em; }
+    .inv-meta { font-size: .9rem; }
+    .party { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-top: 1.2rem; }
+    .party h3 { font-size: .8rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin-bottom: .3rem; }
+    table.items { margin-top: 1.4rem; }
+    table.items th, table.items td { border-bottom: 1px solid #ccc; }
+    .totals { margin-top: 1rem; margin-left: auto; width: min(360px, 100%); }
+    .totals tr td { border: 0; padding: .22rem 0; }
+    .totals tr.grand td { border-top: 2px solid var(--ink); font-weight: 700; padding-top: .45rem; }
+    .words { margin-top: .8rem; font-size: .9rem; }
+    .foot { margin-top: 2rem; border-top: 1px solid #ccc; padding-top: .8rem; font-size: .82rem; color: var(--muted); }
+    .declaration { margin-top: 1rem; font-size: .8rem; }
+    @media print { .no-print { display: none !important; } .sheet { padding: 0; } }
+    @media (max-width: 620px) { .party { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="sheet">
+  <p class="no-print" style="margin-bottom:1rem">
+    <button class="btn" onclick="window.print()">Print / save as PDF</button>
+    <a class="btn btn-secondary" href="/app/invoices/{{ invoice.id }}">Back</a>
+  </p>
+
+  <div class="inv-head">
+    <div>
+      <div class="inv-title">TAX INVOICE</div>
+      <div class="inv-meta">
+        <strong>{{ org.legal_name or org.name }}</strong><br>
+        {% if org.address_line1 %}{{ org.address_line1 }}<br>{% endif %}
+        {% if org.address_line2 %}{{ org.address_line2 }}<br>{% endif %}
+        {% if org.city %}{{ org.city }}{% if org.pincode %} — {{ org.pincode }}{% endif %}<br>{% endif %}
+        {% if org.state %}{{ org.state }} ({{ org.state_code }})<br>{% endif %}
+        {% if org.gstin %}GSTIN: <span class="mono">{{ org.gstin }}</span><br>{% endif %}
+        {% if org.pan %}PAN: <span class="mono">{{ org.pan }}</span><br>{% endif %}
+        {% if org.phone_e164 %}Phone: {{ org.phone_e164 }}<br>{% endif %}
+        {% if org.billing_email %}Email: {{ org.billing_email }}{% endif %}
+      </div>
+    </div>
+    <div class="inv-meta">
+      <table class="kv" style="font-size:.9rem">
+        <tr><td style="border:0;color:var(--muted)">Invoice no.</td><td style="border:0" class="mono strong">{{ invoice.invoice_number }}</td></tr>
+        <tr><td style="border:0;color:var(--muted)">Date of issue</td><td style="border:0">{{ fmt_date(invoice.issue_date) }}</td></tr>
+        <tr><td style="border:0;color:var(--muted)">Due date</td><td style="border:0">{{ fmt_date(invoice.due_date) }}</td></tr>
+        <tr><td style="border:0;color:var(--muted)">Place of supply</td><td style="border:0">{{ invoice.place_of_supply_state_code or '—' }}{% if pos_name %} · {{ pos_name }}{% endif %}</td></tr>
+        <tr><td style="border:0;color:var(--muted)">Reverse charge</td><td style="border:0">{{ 'Yes' if invoice.reverse_charge else 'No' }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="party">
+    <div>
+      <h3>Billed to</h3>
+      <div>
+        <strong>{{ customer.name }}</strong><br>
+        {% if customer.contact_name %}Attn: {{ customer.contact_name }}<br>{% endif %}
+        {% if customer.address %}{{ customer.address }}<br>{% endif %}
+        {% if customer.state_code %}State code: {{ customer.state_code }} ({{ pos_name }})<br>{% endif %}
+        {% if customer.gstin %}GSTIN: <span class="mono">{{ customer.gstin }}</span><br>{% endif %}
+        {% if customer.phone_e164 %}Phone: {{ customer.phone_e164 }}{% endif %}
+      </div>
+    </div>
+    <div>
+      <h3>Payment</h3>
+      <div>
+        {% if outstanding is defined and outstanding == 0 %}
+          <span class="badge badge-paid">Paid in full</span>
+        {% else %}
+          Status: {{ invoice.status.replace('_', ' ') }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <table class="items">
+    <thead>
+      <tr>
+        <th style="width:3rem">#</th>
+        <th>Description</th>
+        <th style="width:5rem">SAC</th>
+        <th class="num" style="width:4rem">Qty</th>
+        <th class="num" style="width:7rem">Rate</th>
+        <th class="num" style="width:8rem">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in items %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ item.description }}</td>
+          <td class="mono">{{ item.hsn_sac or invoice.sac_code }}</td>
+          <td class="num">{{ item.quantity }}</td>
+          <td class="num">{{ money(item.unit_price_paise) }}</td>
+          <td class="num">{{ money(item.line_total_paise) }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <table class="totals">
+    <tr><td>Taxable value</td><td class="num">{{ money(invoice.taxable_value_paise) }}</td></tr>
+    {% if invoice.discount_paise %}
+      <tr><td>Discount</td><td class="num">− {{ money(invoice.discount_paise) }}</td></tr>
+    {% endif %}
+    {% if invoice.igst_paise %}
+      <tr><td>IGST @ {{ invoice.gst_rate_percent }}%</td><td class="num">{{ money(invoice.igst_paise) }}</td></tr>
+    {% elif invoice.cgst_paise or invoice.sgst_paise %}
+      <tr><td>CGST @ {{ (invoice.gst_rate_percent / 2) }}%</td><td class="num">{{ money(invoice.cgst_paise) }}</td></tr>
+      <tr><td>SGST @ {{ (invoice.gst_rate_percent / 2) }}%</td><td class="num">{{ money(invoice.sgst_paise) }}</td></tr>
+    {% else %}
+      <tr><td colspan="2" class="muted">Not registered under GST — no tax charged on this invoice.</td></tr>
+    {% endif %}
+    <tr class="grand"><td>Total</td><td class="num">{{ money(invoice.total_paise) }}</td></tr>
+    {% if invoice.paid_paise %}
+      <tr><td>Received</td><td class="num">{{ money(invoice.paid_paise) }}</td></tr>
+      <tr><td>Balance due</td><td class="num">{{ money(invoice.total_paise - invoice.paid_paise - invoice.credited_paise - invoice.written_off_paise) }}</td></tr>
+    {% endif %}
+  </table>
+
+  <p class="words"><strong>Amount in words:</strong> {{ words }}</p>
+
+  {% if not org.gst_registered %}
+    <p class="declaration">
+      Declaration: this invoice is issued by a supplier who is not registered under the GST Act,
+      and therefore no GST has been charged.
+    </p>
+  {% endif %}
+
+  <div class="foot">
+    {% if org.complaint_officer_name %}
+      <p>Grievance officer: {{ org.complaint_officer_name }}
+        {% if org.complaint_officer_email %} · {{ org.complaint_officer_email }}{% endif %}
+        {% if org.complaint_officer_phone %} · {{ org.complaint_officer_phone }}{% endif %}
+      </p>
+    {% else %}
+      <p>Grievance officer details are not configured yet. Add one in Settings before sending invoices to customers.</p>
+    {% endif %}
+    <p>
+      This is a computer-generated invoice. Signature and digital signature are not required for
+      an electronically issued invoice. Please quote the invoice number with your payment.
+    </p>
+  </div>
+</div>
+</body>
+</html>

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}{{ t('pricing.title') }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1>{{ t('pricing.title') }}</h1>
+<p class="lede muted">{{ t('pricing.lede') }}</p>
+
+<section class="grid grid-3 section">
+  <div class="price-card">
+    <div class="strong">Starter · monthly</div>
+    <div class="price-amount">₹299</div>
+    <div class="price-sub">{{ t('pricing.monthly') }}</div>
+    <ul>
+      <li>Unlimited invoices and customers</li>
+      <li>Full 9-step reminder ladder</li>
+      <li>WhatsApp + SMS delivery</li>
+      <li>Hindi and English</li>
+      <li>Your own payment gateway</li>
+    </ul>
+    <a class="btn" href="/signup">{{ t('pricing.cta') }}</a>
+  </div>
+
+  <div class="price-card featured">
+    <div class="strong">Starter · annual</div>
+    <div class="price-amount">₹2,999</div>
+    <div class="price-sub">{{ t('pricing.annual') }} — works out to ₹250 a month</div>
+    <ul>
+      <li>Everything in monthly</li>
+      <li>Two months free versus paying monthly</li>
+      <li>GST-compliant invoice templates with CGST/SGST/IGST</li>
+      <li>MSMED evidence pack for late payers</li>
+    </ul>
+    <a class="btn" href="/signup">{{ t('pricing.cta') }}</a>
+  </div>
+
+  <div class="price-card">
+    <div class="strong">Growth · annual</div>
+    <div class="price-amount">₹5,999</div>
+    <div class="price-sub">{{ t('pricing.annual') }}
+      <br><span class="muted small">For 5+ staff using it together</span></div>
+    <ul>
+      <li>Everything in Starter</li>
+      <li>More user seats</li>
+      <li>Priority support over WhatsApp</li>
+    </ul>
+    <a class="btn" href="/signup">{{ t('pricing.cta') }}</a>
+  </div>
+</section>
+
+<p class="muted small">{{ t('billing.trial_note') }} GST extra where applicable.</p>
+
+<section class="section">
+  <h2>{{ t('pricing.faq') }}</h2>
+
+  <div class="card card-flat">
+    <h3>{{ t('pricing.q1') }}</h3>
+    <p>{{ t('pricing.a1') }}</p>
+  </div>
+
+  <div class="card card-flat">
+    <h3>{{ t('pricing.q2') }}</h3>
+    <p>{{ t('pricing.a2') }}</p>
+  </div>
+
+  <div class="card card-flat">
+    <h3>{{ t('pricing.q3') }}</h3>
+    <p>{{ t('pricing.a3') }}</p>
+  </div>
+
+  <div class="card card-flat">
+    <h3>Do you send messages to my customers without asking me?</h3>
+    <p>
+      No. You see every scheduled message before it goes, you can change the schedule, and we only
+      send on WhatsApp to customers who have agreed to it. If a customer replies with a dispute,
+      a payment claim, or a request for a plan, the reminders stop immediately and we tell you.
+    </p>
+  </div>
+
+  <div class="card card-flat">
+    <h3>Is this billing software?</h3>
+    <p>
+      No. Use whatever you already use to raise invoices if you like — this is about what happens
+      after the invoice goes out, which is where money actually gets stuck. If you do want GST
+      invoices from here, they are generated with the buyer's GSTIN, place of supply and the correct
+      CGST/SGST or IGST split.
+    </p>
+  </div>
+</section>
+
+<p class="section"><a class="btn" href="/signup">{{ t('pricing.cta') }}</a></p>
+{% endblock %}

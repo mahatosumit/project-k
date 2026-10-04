@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}{{ t('inv.new') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<h1>{{ t('inv.new') }}</h1>
+
+{% if error %}
+  <div class="alert alert-error">{{ t(error) if t.has(error) else error }}</div>
+{% endif %}
+
+{% if not customers %}
+  <div class="card">
+    <p>{{ t('cust.none') }}</p>
+    <a class="btn" href="/app/customers/new">{{ t('cust.new') }}</a>
+  </div>
+{% else %}
+<div class="card">
+  <form method="post" action="/app/invoices">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="field">
+      <label for="customer_id">{{ t('inv.select_customer') }}</label>
+      <select id="customer_id" name="customer_id" required>
+        {% for c in customers %}
+          <option value="{{ c.id }}" {% if preselected == c.id %}selected{% endif %}>
+            {{ c.name }}{% if c.gstin %} · {{ c.gstin }}{% endif %}{% if c.state_code %} · {{ c.state_code }}{% endif %}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="description">{{ t('inv.description') }}</label>
+      <input type="text" id="description" name="description" maxlength="400"
+             value="{{ (form.description if form else '') or '' }}" required>
+    </div>
+
+    <div class="field">
+      <label for="amount">{{ t('inv.amount') }}</label>
+      <input type="text" id="amount" name="amount" inputmode="decimal" required
+             value="{{ (form.amount if form else '') or '' }}" placeholder="24000">
+      <p class="field-help">Use Indian formatting if you like: 24,000.50</p>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="issue_date">{{ t('inv.issue_date') }}</label>
+        <input type="date" id="issue_date" name="issue_date" value="{{ (form.issue_date if form else '') or today }}" required>
+      </div>
+      <div class="field">
+        <label for="due_days">{{ t('inv.due_days') }}</label>
+        <input type="number" id="due_days" name="due_days" min="0" max="365"
+               value="{{ (form.due_days if form else '') or default_due_days }}">
+        <p class="field-help">Reminders are scheduled backwards from this date.</p>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="discount">{{ t('inv.discount') }} <span class="muted small">({{ t('common.optional') }})</span></label>
+        <input type="text" id="discount" name="discount" inputmode="decimal" placeholder="0">
+      </div>
+      <div class="field">
+        <label for="gst_rate">{{ t('inv.gst_rate') }}</label>
+        <input type="number" id="gst_rate" name="gst_rate" min="0" max="100" step="0.01" value="18">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="place_of_supply">{{ t('inv.place_of_supply') }}</label>
+      <select id="place_of_supply" name="place_of_supply">
+        <option value="">— same as the customer's state, if recorded —</option>
+        {% for code, name in states.items() %}
+          <option value="{{ code }}" {% if org.state_code == code %}selected{% endif %}>{{ code }} · {{ name }}</option>
+        {% endfor %}
+      </select>
+      <p class="field-help">
+        Your state is {{ org.state_code }}{% if org.state %} ({{ org.state }}){% endif %}.
+        The same state means CGST+SGST; a different state means IGST.
+        {% if not org.gst_registered %}You are marked as not GST registered, so no tax lines will be added.{% endif %}
+      </p>
+    </div>
+
+    <div class="field">
+      <label for="notes">{{ t('inv.notes') }}</label>
+      <textarea id="notes" name="notes" maxlength="2000"></textarea>
+    </div>
+
+    <button class="btn btn-block" type="submit">{{ t('inv.save') }}</button>
+    <p class="field-help center">You will see the full reminder schedule before anything is sent.</p>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

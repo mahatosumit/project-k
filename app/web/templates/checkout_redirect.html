@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ t('checkout.redirecting') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block body_class %}{% endblock %}
+
+{% block content %}
+<div class="card">
+  <h1>{{ t('checkout.redirecting') }}</h1>
+  {% if invoice %}
+    <p class="muted small">{{ invoice.invoice_number }}</p>
+  {% endif %}
+  <p>{{ t('checkout.note') }}</p>
+  <p class="mono small muted">order {{ order_id }} · {{ checkout.provider }}</p>
+  <p class="small muted">{{ t('checkout.problem') }}</p>
+  <a class="btn btn-secondary" href="/">Return to {{ app_name }}</a>
+</div>
+
+{% if checkout.payment_session_id %}
+  <p class="small center section">
+    Gateway session: <span class="mono">{{ checkout.payment_session_id[:24] }}…</span>
+  </p>
+{% endif %}
+{% endblock %}

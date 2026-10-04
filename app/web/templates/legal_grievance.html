@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}{{ t('legal.contact') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<h1>{{ t('legal.contact') }}</h1>
+<p class="muted small">{{ t('legal.updated') }}: {{ version }}</p>
+
+<div class="alert alert-warn">
+  <strong>This page must be completed before the first paying customer.</strong>
+  Indian practice, and most payment gateways' onboarding checks, expect a named grievance officer
+  with working contact details. Each business using {{ app_name }} fills its own in Settings, which
+  is what appears on its invoices and its customer payment page. The operator of this deployment
+  must also publish its own details here. That action is tracked in HUMAN_TODO.
+</div>
+
+<h2>For a customer of a business using {{ app_name }}</h2>
+<p>
+  The fastest route is the grievance link on the payment page you were sent. It reaches that
+  business with a tracking reference, and it is the same path to use for a data request such as
+  correcting or deleting your information. You will get an acknowledgement with a reference number,
+  and a response within {{ complaint_window_hours }} hours.
+</p>
+<p>
+  That business is the data fiduciary for your information. {{ app_name }} is the software it uses,
+  so requests about your data are normally answered by them, not by us.
+</p>
+
+<h2>For a business using {{ app_name }}</h2>
+<p>
+  Write to {{ support_email }} for anything to do with the service, including billing, refunds,
+  security questions, and difficulty connecting a payment gateway. Please include the invoice or
+  order reference where you have one — it makes the request much faster to act on.
+</p>
+
+<h2>Security incidents</h2>
+<p>
+  If you believe you have found a vulnerability, or you believe your account has been accessed
+  without permission, write to {{ support_email }} with the details and do not test the issue
+  against other users' data. Reports are treated as urgent, and internet-facing incidents are
+  reported to CERT-In within {{ cert_in_hours }} hours as the directions require.
+</p>
+
+<h2>Escalation</h2>
+<ol>
+  <li>Raise the issue through the in-app support or the grievance form, so it gets a reference.</li>
+  <li>If it is not resolved, ask for it to be escalated to the grievance officer in writing.</li>
+  <li>If it is still not resolved, the next step under Indian law depends on the nature of the
+      complaint — for data matters it is the Data Protection Board of India, and for consumer
+      matters the consumer forum. We will tell you clearly which applies rather than leaving you to
+      work it out.</li>
+</ol>
+{% endblock %}

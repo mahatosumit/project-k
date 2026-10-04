@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}{{ t('legal.privacy') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<h1>{{ t('legal.privacy') }}</h1>
+<p class="muted small">{{ t('legal.updated') }}: {{ version }}</p>
+
+<div class="alert alert-warn">
+  This policy describes what the software actually does. It is written to be read, not to hide
+  behind. It has not been reviewed by a lawyer yet, and that review is listed as a required
+  action in the project's HUMAN_TODO before any real customer is onboarded.
+</div>
+
+<h2>Who is responsible</h2>
+<p>
+  The business that sends you a payment reminder is the one that holds your data — they are the
+  data fiduciary. {{ app_name }} is the software they use. If you are a customer of theirs and want
+  something changed, you can use the grievance link at the bottom of the payment page they sent you,
+  and you can also reach us at {{ support_email }}.
+</p>
+
+<h2>What we collect</h2>
+<ul>
+  <li><strong>About the business using the software:</strong> its name, address, GSTIN and PAN if
+      provided, phone number, billing email, and its invoice numbering preferences.</li>
+  <li><strong>About that business's customers:</strong> business name, contact person, phone number,
+      email, GSTIN if provided, address, and whether they agreed to receive WhatsApp messages.</li>
+  <li><strong>About invoices:</strong> amounts, dates, GST split, payments recorded, and written-off
+      balances.</li>
+  <li><strong>About messages:</strong> which reminder was sent, on which channel, when, and whether
+      it was delivered.</li>
+  <li><strong>Security records:</strong> sign-in events, changes to settings, and webhook receipts,
+      kept for audit.</li>
+</ul>
+
+<h2>What we deliberately do not collect</h2>
+<ul>
+  <li>Card numbers, CVVs, or bank credentials. Payments happen on the payment gateway's own page,
+      and we only ever receive a confirmation. If the gateway gives us a tokenised reference, we
+      store the reference, not the card.</li>
+  <li>Aadhaar numbers, or identity documents of any kind.</li>
+  <li>Your customers' PAN numbers.</li>
+  <li>Anything not needed to send a reminder, take a payment, or prove what happened.</li>
+</ul>
+
+<h2>Why we process it</h2>
+<p>
+  To perform the service the business asked for: raising and tracking invoices, sending reminders,
+  accepting payments, keeping accounts, and meeting tax and record-keeping duties. Where we rely on
+  consent — specifically, sending automated WhatsApp or SMS messages to a customer — the consent is
+  recorded with its date and source, and it can be withdrawn at any time. Withdrawal stops the
+  automated messages immediately.
+</p>
+
+<h2>Who else sees it</h2>
+<ul>
+  <li>The payment gateway the business connects, to process a payment you chose to make.</li>
+  <li>A messaging provider, to deliver a reminder the business scheduled.</li>
+  <li>Our hosting provider, which stores the data.</li>
+</ul>
+<p>
+  We do not sell personal data, and we do not use it to train models or to advertise to your
+  customers. Service providers are chosen for being able to do the job, and they are bound to use
+  the data only for it.
+</p>
+
+<h2>How long we keep it</h2>
+<p>
+  Invoice and payment records are kept as long as tax and accounting rules require, because
+  deleting them would put the business in breach. Security and audit logs are kept for
+  {{ log_retention_days }} days, and the logs remain within India as the CERT-In directions require.
+  Message history is kept while the account is active. If a business closes its account, records are
+  deleted or anonymised once the statutory retention period ends, and you can ask for export or
+  deletion sooner as described below.
+</p>
+
+<h2>Your rights over your own data</h2>
+<p>
+  If you are a customer of a business that uses {{ app_name }}, you can ask to see what is held
+  about you, have it corrected, or have it deleted. Export and erasure are built into the product:
+  the business can produce a machine-readable file with everything we hold about you, and can
+  remove you. Ask them through the payment page they sent you, or write to the grievance officer
+  listed there, and you will get an acknowledgement with a reference number. We aim to respond
+  within {{ complaint_window_hours }} hours and to complete requests within 30 days.
+</p>
+<p>
+  When you ask for erasure, records that the business must keep for tax or accounting purposes are
+  retained, and we will tell you exactly which ones and why. Everything else goes.
+</p>
+
+<h2>Security</h2>
+<p>
+  Passwords are stored with argon2id hashing. Payment gateway keys are encrypted at rest and are
+  never displayed again after being saved. Every webhook from a payment gateway is verified against
+  a signature over the raw request body. Sessions use signed cookies that are invalidated when a
+  password changes. Access to a business's data is scoped to that business, and every administrative
+  action is written to an audit log.
+</p>
+
+<h2>If something goes wrong</h2>
+<p>
+  Internet-facing incidents are reported to CERT-In within {{ cert_in_hours }} hours of being
+  noticed, as the directions require, and affected businesses are told what happened and what to do.
+  Where the law requires it, affected individuals are informed too. The incident runbook is part of
+  the product's operations documentation.
+</p>
+
+<h2>Children</h2>
+<p>
+  This is business software for invoicing and payments. It is not intended for use by children, and
+  we do not knowingly collect data about them. If you believe a child's data has reached us, write
+  to us and it will be removed.
+</p>
+
+<h2>Changes</h2>
+<p>
+  When this policy changes, the version date at the top changes with it, and businesses using the
+  product are told in the app. Previously recorded consent keeps pointing at the version that was
+  in force when it was given.
+</p>
+
+<h2>{{ t('legal.contact') }}</h2>
+<p>
+  Write to {{ support_email }}. If your complaint is about a specific invoice or a specific
+  business, the fastest route is the grievance link on the payment page they sent you, because it
+  reaches that business with a tracking reference.
+</p>
+{% endblock %}

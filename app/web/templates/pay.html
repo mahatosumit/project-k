@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}{{ t('pay.title') }} — {{ org.name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<p class="eyebrow">{{ org.name }}</p>
+<h1>{{ t('pay.title') }}</h1>
+<p class="muted small">
+  {{ invoice.invoice_number }} · {{ t('inv.issue_date') }} {{ fmt_date(invoice.issue_date) }} ·
+  {{ t('inv.due') }} {{ fmt_date(invoice.due_date) }}
+</p>
+
+{% if request.query_params.get('ok') %}
+  <div class="alert alert-ok">{{ t('pay.thanks') }}</div>
+{% endif %}
+{% if request.query_params.get('error') == 'gateway' %}
+  <div class="alert alert-error">The payment could not be started. Please try again, or contact {{ org.name }}.</div>
+{% endif %}
+
+<div class="card">
+  <div class="stat-label">{{ t('pay.amount_due') }}</div>
+  <div class="amount-hero">{{ money(outstanding_paise) }}</div>
+  {% if days_overdue %}
+    <p class="small" style="color:var(--danger)">{{ days_overdue }} days past the due date</p>
+  {% endif %}
+  {% if invoice.description %}<p>{{ invoice.description }}</p>{% endif %}
+  <p class="small muted">{{ words }}</p>
+</div>
+
+{% if dispute %}
+  <div class="alert alert-warn">{{ t('pay.dispute_open') }}</div>
+{% endif %}
+
+{% if plan and installments %}
+  <div class="card">
+    <h2>{{ t('pay.agree_plan') }}</h2>
+    <p class="small muted">{{ t('pay.instalment_note') }}</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>#</th><th>{{ t('inv.due') }}</th><th class="num">Amount</th><th>{{ t('inv.status') }}</th></tr></thead>
+        <tbody>
+          {% for ins in installments %}
+            <tr>
+              <td>{{ ins.seq }}</td>
+              <td class="nowrap">{{ fmt_date(ins.due_date) }}</td>
+              <td class="num">{{ money(ins.amount_paise) }}</td>
+              <td>{{ ins.status }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+{% endif %}
+
+{% if outstanding_paise > 0 %}
+<section class="section">
+  {% if gateway_connected %}
+    <form method="post" action="/pay/{{ invoice.id }}/{{ token }}/start-payment">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-block" type="submit">{{ t('pay.pay_now') }} · {{ money(outstanding_paise) }}</button>
+    </form>
+    <p class="small muted" style="margin-top:.6rem">{{ t('pay.secure_note') }}</p>
+  {% else %}
+    <div class="alert alert-warn">{{ t('pay.gateway_missing') }}</div>
+  {% endif %}
+</section>
+
+<section class="section pay-actions">
+  <details>
+    <summary>{{ t('pay.already_paid') }}</summary>
+    <div>
+      <form method="post" action="/pay/{{ invoice.id }}/{{ token }}/claim-paid">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+          <label for="utr">{{ t('pay.paid_utr') }}</label>
+          <input type="text" id="utr" name="utr" maxlength="40" inputmode="numeric">
+        </div>
+        <div class="field">
+          <label for="paid_note">{{ t('pay.message') }}</label>
+          <textarea id="paid_note" name="note" maxlength="1000"></textarea>
+        </div>
+        <p class="field-help">{{ t('pay.paid_note') }}</p>
+        <button class="btn" type="submit">{{ t('pay.submit') }}</button>
+      </form>
+    </div>
+  </details>
+
+  <details>
+    <summary>{{ t('pay.part_payment') }}</summary>
+    <div>
+      <form method="post" action="/pay/{{ invoice.id }}/{{ token }}/plan">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="grid grid-2">
+          <div class="field">
+            <label for="installments">{{ t('pay.installments') }}</label>
+            <select id="installments" name="installments">
+              {% for n in [2, 3, 4, 6, 9, 12] %}
+                <option value="{{ n }}" {% if n == 3 %}selected{% endif %}>{{ n }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="first_date">{{ t('pay.first_date') }}</label>
+            <input type="date" id="first_date" name="first_date">
+          </div>
+        </div>
+        <div class="field">
+          <label for="plan_message">{{ t('pay.message') }}</label>
+          <textarea id="plan_message" name="message" maxlength="2000"></textarea>
+        </div>
+        <p class="field-help">{{ t('pay.instalment_note') }}</p>
+        <button class="btn" type="submit">{{ t('pay.agree_plan') }}</button>
+      </form>
+    </div>
+  </details>
+
+  <details>
+    <summary>{{ t('pay.dispute') }}</summary>
+    <div>
+      <form method="post" action="/pay/{{ invoice.id }}/{{ token }}/dispute">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+          <label for="reason_code">{{ t('pay.reason') }}</label>
+          <select id="reason_code" name="reason_code">
+            <option value="work_not_done">{{ t('pay.reason_work_not_done') }}</option>
+            <option value="amount_incorrect">{{ t('pay.reason_amount_incorrect') }}</option>
+            <option value="already_paid">{{ t('pay.reason_already_paid') }}</option>
+            <option value="needs_time">{{ t('pay.reason_needs_time') }}</option>
+            <option value="po_number_missing">{{ t('pay.reason_po_number_missing') }}</option>
+            <option value="gst_issue">{{ t('pay.reason_gst_issue') }}</option>
+            <option value="other">{{ t('pay.reason_other') }}</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="claimed_amount">Amount in dispute <span class="muted small">({{ t('common.optional') }})</span></label>
+          <input type="text" id="claimed_amount" name="claimed_amount" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label for="promised_date">{{ t('pay.first_date') }} <span class="muted small">({{ t('common.optional') }})</span></label>
+          <input type="date" id="promised_date" name="promised_date">
+        </div>
+        <div class="field">
+          <label for="dispute_message">{{ t('pay.message') }}</label>
+          <textarea id="dispute_message" name="message" maxlength="2000"></textarea>
+        </div>
+        <button class="btn" type="submit">{{ t('pay.submit') }}</button>
+      </form>
+    </div>
+  </details>
+</section>
+{% endif %}
+
+{% if invoice.notes and 'show-internal' == 'never' %}{% endif %}
+
+<section class="section card">
+  <h2>{{ t('inv.tax_breakup') }}</h2>
+  <dl class="kv">
+    <dt>{{ t('inv.taxable_value') }}</dt><dd>{{ money(invoice.taxable_value_paise) }}</dd>
+    {% if invoice.igst_paise %}
+      <dt>{{ t('inv.igst') }}</dt><dd>{{ money(invoice.igst_paise) }}</dd>
+    {% else %}
+      <dt>{{ t('inv.cgst') }}</dt><dd>{{ money(invoice.cgst_paise) }}</dd>
+      <dt>{{ t('inv.sgst') }}</dt><dd>{{ money(invoice.sgst_paise) }}</dd>
+    {% endif %}
+    <dt><strong>{{ t('inv.total') }}</strong></dt><dd><strong>{{ money(invoice.total_paise) }}</strong></dd>
+    {% if invoice.paid_paise %}<dt>Paid so far</dt><dd>{{ money(invoice.paid_paise) }}</dd>{% endif %}
+  </dl>
+  <hr class="divider">
+  <p class="small muted">
+    {{ org.name }}{% if org.gstin %} · GSTIN {{ org.gstin }}{% endif %}
+    {% if org.address_line1 %}<br>{{ org.address_line1 }}{% if org.city %}, {{ org.city }}{% endif %}{% if org.pincode %} {{ org.pincode }}{% endif %}{% endif %}
+    {% if placesupply %}<br>Place of supply: {{ placesupply }}{% endif %}
+  </p>
+</section>
+
+<section class="section card">
+  <h2>{{ t('pay.contact_title') }}</h2>
+  <p class="small muted">{{ t('pay.contact_help') }}</p>
+  {% if org.complaint_officer_name %}
+    <p class="small">
+      {{ org.complaint_officer_name }}
+      {% if org.complaint_officer_email %} · {{ org.complaint_officer_email }}{% endif %}
+      {% if org.complaint_officer_phone %} · {{ org.complaint_officer_phone }}{% endif %}
+    </p>
+  {% endif %}
+  <form method="post" action="/pay/{{ invoice.id }}/{{ token }}/support">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="category">Type</label>
+        <select id="category" name="category">
+          <option value="general">General question</option>
+          <option value="billing">Something about this bill</option>
+          <option value="data">My data — correct or delete it</option>
+          <option value="complaint">Complaint</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="contact">How should we reply?</label>
+        <input type="text" id="contact" name="contact" maxlength="254"
+               value="{{ customer.email or customer.phone_e164 or '' }}">
+      </div>
+    </div>
+    <div class="field">
+      <label for="support_message">{{ t('support.message') }}</label>
+      <textarea id="support_message" name="message" maxlength="4000" required></textarea>
+    </div>
+    <button class="btn btn-secondary" type="submit">{{ t('pay.submit') }}</button>
+  </form>
+</section>
+{% endblock %}

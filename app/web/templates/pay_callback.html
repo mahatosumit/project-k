@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}{{ t('pay.title') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<div class="card center">
+  {% if settled %}
+    <h1>{{ t('pay_callback.thanks') }}</h1>
+    <p>{{ t('pay_callback.settled') }}</p>
+  {% else %}
+    <h1>{{ t('checkout.problem') }}</h1>
+    <p class="muted">{{ t('pay_callback.pending') }}</p>
+    <p class="stat-label">{{ t('pay_callback.outstanding') }}</p>
+    <div class="amount-hero">{{ money(outstanding_paise) }}</div>
+  {% endif %}
+</div>
+
+<p class="center section">
+  <a class="btn btn-secondary" href="/pay/{{ invoice.id }}/{{ token }}">{{ t('pay.title') }}</a>
+</p>
+{% endblock %}

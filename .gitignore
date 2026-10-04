@@ -1,0 +1,50 @@
+# Vasool — what must never be committed.
+
+# Secrets. The app refuses to start in staging/production without the two keys,
+# and they must come from the platform's secret store, never the repository.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Databases and their sidecars
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+verify-schema.db*
+
+# Backups and logs: they contain customer data and are written by the jobs
+backups/
+logs/
+*.pgdump
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+build/
+dist/
+
+# Tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+.zwork/
+
+# SBOMs and scan output are build artefacts, kept by CI not by git
+sbom.spdx.json
+trivy-report.*
+
+# Editors and OS noise
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db

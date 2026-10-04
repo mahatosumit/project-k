@@ -1,0 +1,114 @@
+# Vasool — local/staging stack.
+#
+# Start:  docker compose up --build
+# The app refuses to start with APP_ENV=staging unless SECRET_KEY and
+# FIELD_ENCRYPTION_KEY are set, so provide them in a .env file next to this one:
+#
+#   SECRET_KEY=<48+ random chars>
+#   FIELD_ENCRYPTION_KEY=<base64 32-byte key>
+#
+# Generate both:
+#   python -c "import secrets; print(secrets.token_urlsafe(48))"
+#   python -c "import base64,os; print(base64.urlsafe_b64encode(os.urandom(32)).decode())"
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-vasool}
+      POSTGRES_USER: ${POSTGRES_USER:-vasool}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      # Keep the cluster in a predictable locale so text sorting is stable.
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-vasool} -d ${POSTGRES_DB:-vasool}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Not published to the host: only the app needs to reach the database.
+    expose:
+      - "5432"
+
+  app:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-staging}
+      APP_NAME: ${APP_NAME:-Vasool}
+      BASE_URL: ${BASE_URL:-http://localhost:8080}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-vasool}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vasool}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:?set FIELD_ENCRYPTION_KEY in .env}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-mock}
+      PAYMENT_MODE: ${PAYMENT_MODE:-sandbox}
+      MESSAGING_PROVIDER: ${MESSAGING_PROVIDER:-console}
+      BACKUP_DIR: /data/backups
+      LOG_RETENTION_DAYS: ${LOG_RETENTION_DAYS:-180}
+      CERT_IN_REPORT_HOURS: ${CERT_IN_REPORT_HOURS:-6}
+      ENABLE_HSTS: ${ENABLE_HSTS:-1}
+      RBI_BANK_RATE_PERCENT: ${RBI_BANK_RATE_PERCENT:-0}
+    volumes:
+      - appdata:/data
+    expose:
+      - "8000"
+
+  # TLS termination and automatic certificates. In a real deployment this holds the
+  # public ports; for local testing it serves plain HTTP on 8080.
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
+    ports:
+      - "${HTTP_PORT:-8080}:80"
+      - "${HTTPS_PORT:-8443}:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+
+  # Reminder dispatch and the daily reconciliation sweep, run as a scheduled sidecar
+  # so a single Compose file is enough. In production, use a real scheduler (systemd
+  # timer or the platform's cron) and keep the container stateless.
+  jobs:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-staging}
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-vasool}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-vasool}
+      SECRET_KEY: ${SECRET_KEY:?set SECRET_KEY in .env}
+      FIELD_ENCRYPTION_KEY: ${FIELD_ENCRYPTION_KEY:?set FIELD_ENCRYPTION_KEY in .env}
+      PAYMENT_PROVIDER: ${PAYMENT_PROVIDER:-mock}
+      PAYMENT_MODE: ${PAYMENT_MODE:-sandbox}
+      MESSAGING_PROVIDER: ${MESSAGING_PROVIDER:-console}
+      BACKUP_DIR: /data/backups
+    volumes:
+      - appdata:/data
+    # Every 5 minutes: dispatch due reminders and sweep pending gateway orders.
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        while true; do
+          python scripts/run_jobs.py || echo "job cycle failed; will retry"
+          sleep 300
+        done
+
+volumes:
+  pgdata:
+  appdata:
+  caddydata:
+  caddyconfig:

@@ -1,0 +1,41 @@
+# Vasool — pinned runtime dependencies.
+#
+# Policy (see docs/DECISIONS.md and docs/DEPENDENCIES.md):
+#   * exact pins, no ranges, so a build is reproducible;
+#   * permissive licences only (MIT / BSD / Apache-2.0 / MPL-2.0);
+#   * payment SDKs are the providers' OWN official packages;
+#   * nothing requiring a build toolchain or an install script at deploy time.
+#
+# Install:  python -m pip install -r requirements.txt
+
+# --- Web framework and server (MIT / BSD-3-Clause) ---
+fastapi==0.142.2
+uvicorn[standard]==0.54.0
+starlette==1.7.0
+python-multipart==0.0.32
+
+# --- Templating (BSD-3-Clause) ---
+Jinja2==3.1.6
+MarkupSafe==3.0.4
+
+# --- Data layer (MIT) ---
+SQLAlchemy==2.1.3
+# PostgreSQL driver is intentionally not pinned here: production uses
+# psycopg[binary] installed by the deployment image, and the app talks to any
+# PostgreSQL through SQLAlchemy's URL, so the local test suite needs no driver.
+
+# --- Validation, HTTP, settings (MIT / BSD) ---
+pydantic==2.13.5
+pydantic_core==2.46.5
+httpx==0.28.1
+python-dotenv==1.2.4
+
+# --- Security primitives (MIT / Apache-2.0) ---
+argon2-cffi==25.1.0
+argon2-cffi-bindings==26.1.0
+itsdangerous==2.2.0
+cryptography==50.0.2
+
+# --- Payments: official provider SDKs only (MIT / Apache-2.0) ---
+razorpay==2.0.1
+cashfree-pg==6.0.1

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}{{ t('cust.title') }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="spread">
+  <h1>{{ t('cust.title') }}</h1>
+  <a class="btn" href="/app/customers/new">{{ t('cust.new') }}</a>
+</div>
+
+<form method="get" action="/app/customers" class="row" style="margin-bottom:1rem">
+  <input type="text" name="q" value="{{ q }}" placeholder="{{ t('form.search') }} — name, phone or email" style="max-width:320px">
+  <button class="btn btn-secondary" type="submit">{{ t('form.search') }}</button>
+</form>
+
+{% if rows %}
+  <div class="card card-flat table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>{{ t('cust.name') }}</th>
+          <th>{{ t('cust.phone') }}</th>
+          <th>{{ t('cust.gstin') }}</th>
+          <th>{{ t('cust.optin') }}</th>
+          <th class="num">{{ t('cust.outstanding') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in rows %}
+          <tr>
+            <td><a href="/app/customers/{{ c.id }}">{{ c.name }}</a></td>
+            <td class="nowrap">{{ c.phone_e164 or '—' }}</td>
+            <td class="mono small">{{ c.gstin or '—' }}</td>
+            <td>
+              {% if c.whatsapp_opt_in %}
+                <span class="badge badge-paid">{{ t('common.yes') }}</span>
+              {% else %}
+                <span class="badge badge-draft">{{ t('common.no') }}</span>
+              {% endif %}
+            </td>
+            <td class="num">{{ money(outstanding.get(c.id, 0)) }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="card card-flat">
+    <p class="muted">{{ t('cust.none') }}</p>
+    <a class="btn" href="/app/customers/new">{{ t('cust.new') }}</a>
+  </div>
+{% endif %}
+{% endblock %}

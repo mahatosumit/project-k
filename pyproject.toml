@@ -1,0 +1,60 @@
+[project]
+name = "vasool"
+version = "1.0.0"
+description = "Receivables follow-up for Indian service businesses"
+requires-python = ">=3.12"
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+exclude = [".git", ".zwork", "backups", "logs", "__pycache__"]
+
+[tool.ruff.lint]
+select = [
+    "F",    # pyflakes: real errors
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "I",    # import sorting
+    "B",    # bugbear
+    "C4",   # comprehensions
+    "UP",   # pyupgrade
+    "S",    # bandit-style security checks
+    "SIM",  # simplification
+    "RET",  # return consistency
+    "PIE",  # misc lints
+    "T20",  # print statements (scripts may print; see per-file ignores)
+    "RUF",  # ruff-specific
+]
+ignore = [
+    # FastAPI's entire dependency-injection API is `param: T = Depends(...)`.
+    # This is the framework's documented idiom, not a mutable-default bug.
+    "B008",
+    # f-strings in logging calls are fine here: the app's log formatter scrubs the
+    # resulting text anyway, and lazy formatting complicates the redaction story.
+    "G004",
+    # Line length is enforced at 120; E501 from long URLs and template strings is noise.
+    "E501",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Scripts are operator tools: printing to stdout is their interface.
+"scripts/*.py" = ["T201"]
+# Tests bind fixtures and read tables directly; that is the point of a test.
+"tests/*.py" = ["S101", "T201", "S105", "S106", "S311"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
+
+[tool.bandit]
+exclude_dirs = ["tests", ".zwork", "backups"]
+# B105/B106 are "hardcoded password" heuristics that fire on the UI *labels* used
+# for form fields; the credential values themselves come from the environment.
+skips = ["B105", "B106", "B110", "B603", "B607"]

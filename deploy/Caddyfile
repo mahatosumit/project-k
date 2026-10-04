@@ -1,0 +1,81 @@
+# Vasool — reverse proxy with automatic HTTPS.
+#
+# Replace vasool.example.in with the real domain. Caddy obtains and renews the
+# certificate automatically, so HTTPS is not a manual chore (and payment gateways
+# require a working HTTPS site with policy pages before they activate a merchant).
+#
+# Local testing: keep the :80 block and skip the TLS block.
+
+{
+	# Send nothing about the stack upstream-facing.
+	servers {
+		protocols h1 h2 h3
+	}
+	admin off
+}
+
+# ---------- production (real domain, automatic TLS) ----------
+vasool.example.in {
+	encode zstd gzip
+
+	# Baseline security headers. The app sets its own CSP; these cover the transport
+	# and browser-behaviour layers the app cannot set on its own behalf.
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+		-X-Powered-By
+	}
+
+	# Health endpoints stay open so an uptime monitor can use them without auth.
+	@health path /healthz /readyz
+	handle @health {
+		reverse_proxy app:8000
+	}
+
+	# Everything else, with request-size and rate limits at the edge as the first line
+	# of defence (the app enforces its own limits too, per client IP).
+	handle {
+		request_body {
+			max_size 2MB
+		}
+		reverse_proxy app:8000 {
+			# Preserve the real client IP for the app's rate limiting. Only trusted
+			# because the app is not directly reachable from the internet.
+			header_up X-Real-IP {remote_host}
+			transport http {
+				read_timeout 30s
+				write_timeout 30s
+			}
+		}
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 20MB
+			roll_keep 30
+			roll_keep_for 180d
+		}
+		format json
+	}
+}
+
+# ---------- local testing (plain HTTP on port 8080) ----------
+:80 {
+	encode gzip
+	@health path /healthz /readyz
+	handle @health {
+		reverse_proxy app:8000
+	}
+	handle {
+		reverse_proxy app:8000 {
+			header_up X-Real-IP {remote_host}
+		}
+	}
+	log {
+		output stdout
+		format console
+	}
+}

@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="{{ locale }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{{ app_name }}{% endblock %}</title>
+  <meta name="description" content="{% block description %}{{ t('app.tagline') }}{% endblock %}">
+  <meta name="color-scheme" content="light">
+  <link rel="stylesheet" href="/static/app.css?v={{ asset_version }}">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+  {% block head %}{% endblock %}
+</head>
+<body class="{% block body_class %}{% endblock %}">
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="site-header">
+  <div class="wrap header-inner">
+    <a class="brand" href="/">
+      <span class="brand-mark" aria-hidden="true">₹</span>
+      <span class="brand-name">{{ app_name }}</span>
+    </a>
+    <nav class="site-nav" aria-label="Main">
+      {% if user %}
+        <a href="/app">{{ t('nav.dashboard') }}</a>
+        <a href="/app/invoices">{{ t('nav.invoices') }}</a>
+        <a href="/app/customers">{{ t('nav.customers') }}</a>
+        <a href="/app/settings">{{ t('nav.settings') }}</a>
+        <a href="/billing">{{ t('nav.billing') }}</a>
+        <form method="post" action="/logout" class="inline-form">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <button type="submit" class="link-button">{{ t('nav.logout') }}</button>
+        </form>
+      {% else %}
+        <a href="/pricing">Pricing</a>
+        <a href="/login">{{ t('nav.login') }}</a>
+        <a class="btn btn-small" href="/signup">{{ t('nav.signup') }}</a>
+      {% endif %}
+      <span class="lang-switch" aria-label="{{ t('common.language') }}">
+        {% set here = request.url.path %}
+        {% set qs = request.url.query %}
+        {% for code, label in locales.items() %}
+          {% if code == locale %}<span aria-current="true">{{ label }}</span>
+          {% else %}<a href="{{ here }}?lang={{ code }}" rel="nofollow">{{ label }}</a>{% endif %}
+        {% endfor %}
+      </span>
+    </nav>
+  </div>
+</header>
+
+{% if needs_csrf_hint %}{% endif %}
+<main id="main" class="{% block main_class %}wrap{% endblock %}">
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="site-footer">
+  <div class="wrap footer-inner">
+    <div>
+      <strong>{{ app_name }}</strong> — {{ t('app.tagline') }}
+    </div>
+    <nav aria-label="Legal">
+      <a href="/legal/privacy">{{ t('legal.privacy') }}</a>
+      <a href="/legal/terms">{{ t('legal.terms') }}</a>
+      <a href="/legal/refund">{{ t('legal.refund') }}</a>
+      <a href="/legal/grievance">{{ t('legal.contact') }}</a>
+    </nav>
+    <div class="muted small">Prices in INR. GST shown separately where applicable.</div>
+  </div>
+</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

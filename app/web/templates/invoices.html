@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ t('inv.title') }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="spread">
+  <h1>{{ t('inv.title') }}</h1>
+  <a class="btn" href="/app/invoices/new">{{ t('inv.new') }}</a>
+</div>
+
+<nav class="tabs">
+  <a href="/app/invoices" {% if not status_filter %}aria-current="page"{% endif %}>All</a>
+  {% for key in ['draft', 'issued', 'partly_paid', 'paid', 'written_off'] %}
+    <a href="/app/invoices?status_filter={{ key }}" {% if status_filter == key %}aria-current="page"{% endif %}>
+      {{ t('inv.status') }}: {{ stage_label(key) if key != 'draft' else 'Draft' }}
+    </a>
+  {% endfor %}
+</nav>
+
+{% if rows %}
+  <div class="card card-flat table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>{{ t('inv.number') }}</th>
+          <th>{{ t('inv.customer') }}</th>
+          <th>{{ t('inv.issue_date') }}</th>
+          <th>{{ t('inv.due') }}</th>
+          <th class="num">{{ t('inv.total') }}</th>
+          <th class="num">{{ t('inv.outstanding') }}</th>
+          <th>{{ t('inv.status') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr class="{% if row.is_overdue %}is-overdue{% endif %}">
+            <td><a href="/app/invoices/{{ row.invoice.id }}">{{ row.invoice.invoice_number }}</a></td>
+            <td>{{ row.customer_name }}</td>
+            <td class="nowrap">{{ fmt_date(row.invoice.issue_date) }}</td>
+            <td class="nowrap">{{ fmt_date(row.invoice.due_date) }}</td>
+            <td class="num">{{ money(row.invoice.total_paise) }}</td>
+            <td class="num">{{ money(row.outstanding_paise) }}</td>
+            <td><span class="badge badge-{{ row.invoice.status }}">{{ row.invoice.status.replace('_', ' ') }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <div class="card card-flat">
+    <p class="muted">{{ t('inv.none') }}</p>
+    <a class="btn" href="/app/invoices/new">{{ t('inv.new') }}</a>
+  </div>
+{% endif %}
+{% endblock %}

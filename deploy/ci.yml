@@ -1,0 +1,101 @@
+# Vasool — CI pipeline.
+#
+# Runs the full QA and security suite on every push. Nothing here needs a secret:
+# the tests use the mock gateway, the console messaging sink and a throwaway
+# SQLite database, which is exactly why the suite is safe to run on a fork.
+
+name: ci
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: python -m ruff check app scripts tests
+
+      - name: Format check (ruff)
+        run: python -m ruff format --check app scripts tests
+
+      - name: Static security analysis (bandit)
+        run: python -m bandit -r app -c pyproject.toml
+
+      - name: Dependency vulnerability audit (pip-audit)
+        run: python -m pip_audit -r requirements.txt --progress-spinner off
+
+      - name: Tests (domain + critical path + abuse cases)
+        env:
+          APP_ENV: dev
+        run: python -m pytest tests -q
+
+      - name: Migrations apply cleanly to an empty PostgreSQL
+        services:
+          postgres:
+            image: postgres:17-alpine
+            env:
+              POSTGRES_PASSWORD: ci-only-not-a-real-credential
+              POSTGRES_DB: vasool
+            ports: ["5432:5432"]
+            options: >-
+              --health-cmd "pg_isready -U postgres"
+              --health-interval 10s --health-timeout 5s --health-retries 5
+        env:
+          APP_ENV: dev
+          DATABASE_URL: postgresql+psycopg://postgres:ci-only-not-a-real-credential@localhost:5432/vasool
+          SECRET_KEY: ci-only-signing-material-0123456789abcdef
+          FIELD_ENCRYPTION_KEY: ci-only-field-material-0123456789abcdef
+        run: |
+          python -m pip install "psycopg[binary]==3.2.10"
+          python -c "from app.db import run_migrations; print(run_migrations(verbose=True))"
+
+  image:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the production image
+        run: docker build -f deploy/Dockerfile -t vasool:ci .
+
+      - name: Scan the image for vulnerabilities (local Trivy definition set)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: vasool:ci
+          format: table
+          severity: CRITICAL,HIGH
+          exit-code: "1"
+          ignore-unfixed: true
+
+      - name: Generate an SBOM (SPDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: vasool:ci
+          format: spdx-json
+          output-file: sbom.spdx.json
+
+      - name: Keep the SBOM as a build artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom
+          path: sbom.spdx.json
+          retention-days: 90

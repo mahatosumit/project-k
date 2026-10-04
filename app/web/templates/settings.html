@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}{{ t('settings.title') }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1>{{ t('settings.title') }}</h1>
+
+{% if request.query_params.get('ok') %}
+  <div class="alert alert-ok">{{ t('settings.saved') }}</div>
+{% endif %}
+{% if request.query_params.get('error') %}
+  <div class="alert alert-error">
+    {% set err = request.query_params.get('error') %}
+    {% if err == 'gstin' %}{{ t('settings.bad_gstin') }}
+    {% elif err == 'pan' %}{{ t('settings.bad_pan') }}
+    {% elif err == 'prefix' %}The invoice prefix must be 8 characters or fewer, so the full number fits the 16-character limit.
+    {% elif err == 'phone' %}{{ t('auth.bad_phone') }}
+    {% elif err == 'provider' %}Choose a supported gateway.
+    {% elif err == 'keyid' %}The key ID is required.
+    {% elif err == 'keytest' %}The gateway rejected the test order. Check the key ID, the key value, and whether the keys are for the right mode (test vs live).
+    {% else %}That change could not be saved.{% endif %}
+  </div>
+{% endif %}
+
+<nav class="tabs">
+  <a href="/app/settings" aria-current="page">{{ t('settings.business') }}</a>
+  <a href="/app/ops">{{ t('settings.ops') }}</a>
+</nav>
+
+<section class="card">
+  <h2>{{ t('settings.business') }}</h2>
+  <form method="post" action="/app/settings">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="name">{{ t('settings.business') }} name</label>
+        <input type="text" id="name" name="name" required maxlength="200" value="{{ org.name }}">
+      </div>
+      <div class="field">
+        <label for="legal_name">{{ t('settings.legal_name') }}</label>
+        <input type="text" id="legal_name" name="legal_name" maxlength="200" value="{{ org.legal_name or '' }}">
+      </div>
+    </div>
+
+    <div class="grid grid-3">
+      <div class="field">
+        <label for="billing_email">{{ t('settings.billing_email') }}</label>
+        <input type="email" id="billing_email" name="billing_email" maxlength="254" value="{{ org.billing_email or '' }}">
+      </div>
+      <div class="field">
+        <label for="phone">{{ t('settings.phone') }}</label>
+        <input type="tel" id="phone" name="phone" maxlength="16" value="{{ org.phone_e164 or '' }}">
+      </div>
+      <div class="field">
+        <label for="locale">{{ t('settings.locale') }}</label>
+        <select id="locale" name="locale">
+          {% for code, label in locales.items() %}
+            <option value="{{ code }}" {% if org.locale == code %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+
+    <div class="grid grid-3">
+      <div class="field">
+        <label for="address_line1">{{ t('settings.address') }}</label>
+        <input type="text" id="address_line1" name="address_line1" maxlength="200" value="{{ org.address_line1 or '' }}">
+      </div>
+      <div class="field">
+        <label for="city">{{ t('settings.city') }}</label>
+        <input type="text" id="city" name="city" maxlength="100" value="{{ org.city or '' }}">
+      </div>
+      <div class="field">
+        <label for="pincode">{{ t('settings.pincode') }}</label>
+        <input type="text" id="pincode" name="pincode" inputmode="numeric" maxlength="6" value="{{ org.pincode or '' }}">
+      </div>
+    </div>
+
+    <hr class="divider">
+    <h3>{{ t('settings.gst') }}</h3>
+
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="gstin">{{ t('settings.gstin') }}</label>
+        <input type="text" id="gstin" name="gstin" maxlength="15" class="mono" value="{{ org.gstin or '' }}" placeholder="27AAPFU0939F1ZV">
+      </div>
+      <div class="field">
+        <label for="pan">{{ t('settings.pan') }}</label>
+        <input type="text" id="pan" name="pan" maxlength="10" class="mono" value="{{ org.pan or '' }}" placeholder="AAPFU0939F">
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="state_code">{{ t('settings.state') }}</label>
+      <select id="state_code" name="state_code">
+        {% for code, name in states.items() %}
+          <option value="{{ code }}" {% if org.state_code == code %}selected{% endif %}>{{ code }} · {{ name }}</option>
+        {% endfor %}
+      </select>
+      <p class="field-help">This decides whether the tax is split as CGST+SGST or charged as IGST.</p>
+    </div>
+
+    <div class="field checkbox">
+      <input type="checkbox" id="gst_registered" name="gst_registered" value="1" {% if org.gst_registered %}checked{% endif %}>
+      <label for="gst_registered">
+        {{ t('settings.gst_registered') }}
+        <div class="field-help">{{ t('settings.gst_not_registered_help') }}</div>
+      </label>
+    </div>
+
+    <div class="grid grid-3">
+      <div class="field">
+        <label for="invoice_prefix">{{ t('settings.invoice_prefix') }}</label>
+        <input type="text" id="invoice_prefix" name="invoice_prefix" maxlength="8" value="{{ org.invoice_prefix }}">
+        <p class="field-help">Your next number looks like {{ org.invoice_prefix }}/26/0001</p>
+      </div>
+      <div class="field">
+        <label for="sac_code">{{ t('settings.sac_code') }}</label>
+        <input type="text" id="sac_code" name="sac_code" maxlength="6" class="mono" value="{{ org.sac_code }}">
+        <p class="field-help">{{ t('settings.sac_help') }}</p>
+      </div>
+    </div>
+
+    <hr class="divider">
+    <h3>{{ t('settings.reminders') }}</h3>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="reminder_days_before">{{ t('settings.reminder_days_before') }}</label>
+        <input type="number" id="reminder_days_before" name="reminder_days_before" min="0" max="30"
+               value="{{ org.reminder_days_before }}">
+      </div>
+      <div class="field">
+        <label for="grace_days_before_final">{{ t('settings.grace_days') }}</label>
+        <input type="number" id="grace_days_before_final" name="grace_days_before_final" min="0" max="90"
+               value="{{ org.grace_days_before_final }}">
+      </div>
+    </div>
+    <div class="field checkbox">
+      <input type="checkbox" id="reminder_escalation_enabled" name="reminder_escalation_enabled" value="1"
+             {% if org.reminder_escalation_enabled %}checked{% endif %}>
+      <label for="reminder_escalation_enabled">
+        {{ t('settings.escalation') }}
+        <div class="field-help">Unchecked means you get the first few reminders only, and nothing formal after that.</div>
+      </label>
+    </div>
+
+    <hr class="divider">
+    <h3>{{ t('settings.complaint_officer') }}</h3>
+    <p class="small muted">{{ t('settings.complaint_officer_help') }}</p>
+    <div class="grid grid-3">
+      <div class="field">
+        <label for="complaint_officer_name">{{ t('cust.name') }}</label>
+        <input type="text" id="complaint_officer_name" name="complaint_officer_name" maxlength="200"
+               value="{{ org.complaint_officer_name or '' }}">
+      </div>
+      <div class="field">
+        <label for="complaint_officer_email">{{ t('cust.email') }}</label>
+        <input type="email" id="complaint_officer_email" name="complaint_officer_email" maxlength="254"
+               value="{{ org.complaint_officer_email or '' }}">
+      </div>
+      <div class="field">
+        <label for="complaint_officer_phone">{{ t('cust.phone') }}</label>
+        <input type="tel" id="complaint_officer_phone" name="complaint_officer_phone" maxlength="16"
+               value="{{ org.complaint_officer_phone or '' }}">
+      </div>
+    </div>
+
+    <button class="btn" type="submit">{{ t('form.save') }}</button>
+  </form>
+</section>
+
+<section class="section card">
+  <h2>{{ t('settings.gateway') }}</h2>
+  <p class="muted small">{{ t('settings.gateway_help') }}</p>
+  <p>
+    {% if org.gateway_provider %}
+      <span class="badge badge-paid">{{ t('settings.connected') }}</span>
+      {{ org.gateway_provider }} · key {{ gateway_key_masked or '—' }}
+      {% if not has_gateway_key %} <span class="badge badge-overdue">key value missing</span>{% endif %}
+    {% else %}
+      <span class="badge badge-draft">{{ t('settings.not_connected') }}</span>
+    {% endif %}
+  </p>
+  <p class="small muted">{{ t('settings.sandbox_note') }}</p>
+
+  <form method="post" action="/app/settings/gateway">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="action" value="save">
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="provider">{{ t('settings.provider') }}</label>
+        <select id="provider" name="provider">
+          {% for key, label in providers.items() %}
+            <option value="{{ key }}" {% if org.gateway_provider == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="field">
+        <label for="key_id">{{ t('settings.key_id') }}</label>
+        <input type="text" id="key_id" name="key_id" maxlength="120" autocomplete="off"
+               value="{{ org.gateway_key_id or '' }}">
+      </div>
+    </div>
+    <div class="grid grid-2">
+      <div class="field">
+        <label for="key_value">{{ t('settings.key_value') }}</label>
+        <input type="password" id="key_value" name="key_value" autocomplete="new-password" maxlength="200">
+        <p class="field-help">{{ t('settings.key_kept') }} Stored encrypted; never shown again.</p>
+      </div>
+      <div class="field">
+        <label for="webhook_value">{{ t('settings.webhook_value') }}</label>
+        <input type="password" id="webhook_value" name="webhook_value" autocomplete="new-password" maxlength="200">
+        <p class="field-help">{{ t('settings.key_kept') }} Used to verify that a callback really came from the gateway.</p>
+      </div>
+    </div>
+    <button class="btn" type="submit">{{ t('form.save') }}</button>
+  </form>
+
+  {% if org.gateway_provider %}
+    <div class="row" style="margin-top:.8rem">
+      <form method="post" action="/app/settings/gateway/test">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-secondary btn-small" type="submit">{{ t('settings.test_keys') }}</button>
+      </form>
+      <form method="post" action="/app/settings/gateway">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="action" value="disconnect">
+        <button class="btn btn-secondary btn-small" type="submit">{{ t('settings.disconnect') }}</button>
+      </form>
+    </div>
+    <p class="small muted" style="margin-top:.6rem">
+      Webhook URL to paste into your gateway dashboard:
+      <span class="mono">{{ settings.base_url }}/webhooks/{{ org.gateway_provider }}</span>
+    </p>
+  {% endif %}
+</section>
+{% endblock %}

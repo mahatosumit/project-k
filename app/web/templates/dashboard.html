@@ -1,0 +1,112 @@
+{% extends "base.html" %}
+{% block title %}{{ t('dash.title') }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="spread">
+  <h1>{{ t('dash.title') }}</h1>
+  <div class="row-tight">
+    <a class="btn btn-small" href="/app/invoices/new">{{ t('inv.new') }}</a>
+    <a class="btn btn-secondary btn-small" href="/app/customers/new">{{ t('cust.new') }}</a>
+  </div>
+</div>
+<p class="muted small">{{ org.name }}{% if org.gstin %} · GSTIN {{ org.gstin }}{% endif %}</p>
+
+{% if not gateway_connected %}
+  <div class="alert alert-warn">
+    {{ t('dash.gateway_missing') }}
+    <a href="/app/settings">{{ t('settings.gateway') }}</a>
+  </div>
+{% endif %}
+
+<section class="grid grid-4 section">
+  <div class="stat">
+    <div class="stat-label">{{ t('dash.outstanding') }}</div>
+    <div class="stat-value">{{ money(totals.outstanding_paise) }}</div>
+    <div class="stat-note">{{ totals.open_invoices }} {{ t('dash.open_invoices')|lower }}</div>
+  </div>
+  <div class="stat {% if totals.overdue_paise %}stat-alert{% endif %}">
+    <div class="stat-label">{{ t('dash.overdue') }}</div>
+    <div class="stat-value">{{ money(totals.overdue_paise) }}</div>
+    <div class="stat-note">Past the due date</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">{{ t('dash.collected_30d') }}</div>
+    <div class="stat-value">{{ money(totals.collected_30d_paise) }}</div>
+    <div class="stat-note">All methods, last 30 days</div>
+  </div>
+  <div class="stat">
+    <div class="stat-label">{{ t('dash.ageing') }}</div>
+    {% set total = (ageing['current'] + ageing['1-30'] + ageing['31-60'] + ageing['61-90'] + ageing['90+']) or 1 %}
+    <div class="small" style="margin-top:.3rem">
+      <div class="spread"><span class="muted">Current</span><span class="num">{{ money(ageing['current']) }}</span></div>
+      <div class="spread"><span class="muted">1–30</span><span class="num">{{ money(ageing['1-30']) }}</span></div>
+      <div class="spread"><span class="muted">31–60</span><span class="num">{{ money(ageing['31-60']) }}</span></div>
+      <div class="spread"><span class="muted">61–90</span><span class="num">{{ money(ageing['61-90']) }}</span></div>
+      <div class="spread"><span class="muted">90+</span><span class="num">{{ money(ageing['90+']) }}</span></div>
+    </div>
+  </div>
+</section>
+
+{% if needs_you %}
+<section class="section">
+  <h2>{{ t('dash.needs_you') }}</h2>
+  <div class="card card-flat">
+    <ul class="timeline">
+      {% for item in needs_you %}
+        <li class="needs-human">
+          <a href="{{ item.href }}">{{ item.title }}</a>
+          {% if item.kind == 'no_consent' %}
+            <div class="small muted">We will not send an automated WhatsApp message without consent. Ask the customer, then record it.</div>
+          {% elif item.kind == 'needs_human' %}
+            <div class="small muted">A machine never sends a final notice. Read it, then press send.</div>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% else %}
+<p class="muted small section">{{ t('dash.no_needs_you') }}</p>
+{% endif %}
+
+<section class="section">
+  <div class="spread">
+    <h2>{{ t('dash.recent') }}</h2>
+    <a class="small" href="/app/invoices">{{ t('dash.view_all') }}</a>
+  </div>
+  {% if rows %}
+    <div class="card card-flat table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>{{ t('inv.number') }}</th>
+            <th>{{ t('inv.customer') }}</th>
+            <th>{{ t('inv.due') }}</th>
+            <th class="num">{{ t('inv.outstanding') }}</th>
+            <th>{{ t('inv.stage') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr class="{% if row.days_overdue %}is-overdue{% endif %}">
+              <td><a href="/app/invoices/{{ row.invoice.id }}">{{ row.invoice.invoice_number }}</a></td>
+              <td>{{ row.customer.name if row.customer else '—' }}</td>
+              <td class="nowrap">
+                {{ fmt_date(row.invoice.due_date) }}
+                {% if row.days_overdue %}<div class="small" style="color:var(--danger)">{{ row.days_overdue }} days</div>{% endif %}
+              </td>
+              <td class="num">{{ money(row.outstanding_paise) }}</td>
+              <td><span class="badge badge-{{ 'overdue' if row.days_overdue else 'issued' }}">{{ stage_label(row.stage) }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="card card-flat">
+      <p class="muted">{{ t('inv.none') }}</p>
+      <a class="btn" href="/app/invoices/new">{{ t('inv.new') }}</a>
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

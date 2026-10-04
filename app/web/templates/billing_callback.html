@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}{{ t('billing.title') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<div class="card center">
+  {% if subscription and subscription.status == 'active' %}
+    <h1>{{ t('pay_callback.thanks') }}</h1>
+    <p>Your {{ subscription.plan_code.replace('_', ' ') }} plan is active.</p>
+    {% if subscription.current_period_end %}
+      <p class="small muted">{{ t('billing.renews') }} {{ fmt_date(subscription.current_period_end.date()) }}</p>
+    {% endif %}
+  {% else %}
+    <h1>{{ t('checkout.problem') }}</h1>
+    <p class="muted">
+      We have not been able to confirm the payment yet. If money has left your account,
+      it will be reconciled automatically — refresh this page in a minute.
+    </p>
+  {% endif %}
+</div>
+<p class="center section">
+  <a class="btn btn-secondary" href="/billing">{{ t('billing.title') }}</a>
+</p>
+{% endblock %}

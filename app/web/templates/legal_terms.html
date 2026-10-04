@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% block title %}{{ t('legal.terms') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<h1>{{ t('legal.terms') }}</h1>
+<p class="muted small">{{ t('legal.updated') }}: {{ version }}</p>
+
+<div class="alert alert-warn">
+  These terms describe the service as it actually behaves. They have not been reviewed by a lawyer
+  yet; that review is a required action in the project's HUMAN_TODO before onboarding paying
+  customers.
+</div>
+
+<h2>1. What the service is</h2>
+<p>
+  {{ app_name }} helps a business record invoices and follow up on unpaid ones: it schedules and
+  sends reminders over messaging channels, lets the customer pay through the business's own payment
+  gateway, records what happened, and produces documents for late payment. It is a tool for
+  collecting money you are owed. It is not a lawyer, an accountant, or a collections agency.
+</p>
+
+<h2>2. What it is not</h2>
+<ul>
+  <li>It is not a payment aggregator. Money moves through the gateway the business connects, and
+      {{ app_name }} never holds, routes, or controls those funds.</li>
+  <li>It does not give tax, legal, or financial advice. GST figures come from the details you enter
+      and the rate you choose; your accountant remains responsible for your returns and your
+      invoices.</li>
+  <li>It does not guarantee that any invoice will be paid, and nothing in it constitutes a threat,
+      a notice, or a legal proceeding on your behalf.</li>
+  <li>The MSMED interest figure is a described calculation, not advice, and it stays blank unless
+      the current RBI bank rate is configured. Confirm it with a professional before you rely on it.</li>
+</ul>
+
+<h2>3. Your responsibilities as a business using it</h2>
+<ul>
+  <li>Only message people you have a genuine commercial relationship with, and only after they have
+      agreed to receive messages on that channel. You are the one who holds the consent; the product
+      records it and refuses to send without it.</li>
+  <li>Enter accurate invoice data. A wrong amount or a wrong GSTIN on an invoice is a dispute you
+      created, not a software bug.</li>
+  <li>Do not use the service to harass anyone, to send marketing, or to send anything you would not
+      be willing to show a customer.</li>
+  <li>Keep your own credentials to your payment gateway safe. You connect your own gateway, so your
+      money and your gateway relationship are your own.</li>
+  <li>Follow Indian law that applies to you, including tax, data protection, and telecom rules.</li>
+</ul>
+
+<h2>4. Accounts and security</h2>
+<p>
+  You are responsible for keeping access to your account secure. Passwords must meet the stated
+  minimum, sessions are invalidated when a password changes, and failed sign-ins are rate limited
+  and may lock an account briefly. Tell us at once if you believe your account has been accessed
+  without permission.
+</p>
+
+<h2>5. Fees and payment</h2>
+<p>
+  Subscription prices are shown in Indian rupees and are exclusive of GST where GST applies. We
+  charge for a period up front rather than taking an automatic debit, so you always know what is
+  being charged and when. A free trial is offered without a card. If a renewal payment is not made,
+  the service moves to a limited state: your data stays, reminders pause, and nothing is deleted for
+  90 days. Refunds are governed by the <a href="/legal/refund">{{ t('legal.refund') }}</a>.
+</p>
+
+<h2>6. Messaging costs and limits</h2>
+<p>
+  Reminder messages are sent through the business's configured provider, and any per-message cost
+  charged by that provider is borne by the business. WhatsApp messages are subject to that platform's
+  own template and opt-in rules, and SMS requires the sender to be registered under TRAI's framework.
+  Where registration is missing, the product will refuse to send rather than send something that will
+  be blocked.
+</p>
+
+<h2>7. Data</h2>
+<p>
+  Your data is yours. We process it as described in the <a href="/legal/privacy">privacy policy</a>.
+  You can export or delete a customer's data from inside the product. If you close your account, you
+  can take an export with you; statutory retention duties may keep some records longer, and we will
+  tell you which.
+</p>
+
+<h2>8. Availability and limits of liability</h2>
+<p>
+  We aim to keep the service running and will maintain and back it up, but it is offered as is. To
+  the extent the law allows, we are not liable for indirect or consequential loss, or for lost
+  profits, and our total liability is limited to the subscription fees you paid in the twelve months
+  before the claim. Nothing here limits liability that cannot be limited under Indian law.
+</p>
+
+<h2>9. Suspension and termination</h2>
+<p>
+  You can stop using the service at any time and cancel renewals with one click. We may suspend an
+  account that is being used to harass people, to send unlawful content, or in a way that puts the
+  service or other users at risk — and we will tell you why.
+</p>
+
+<h2>10. Governing law</h2>
+<p>
+  These terms are governed by the laws of India, and the courts at the place of business of the
+  operator of this deployment have jurisdiction.
+</p>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}{{ t('support.title') }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1>{{ t('support.title') }}</h1>
+<p class="small muted">
+  Complaints and data requests arrive here with a response deadline.
+  Anyone can also reach us from the payment page they were sent.
+</p>
+
+{% if rows %}
+  <div class="card card-flat table-scroll">
+    <table>
+      <thead>
+        <tr>
+          <th>{{ t('support.category') }}</th>
+          <th>{{ t('support.message') }}</th>
+          <th>{{ t('support.sla') }}</th>
+          <th>{{ t('support.status') }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+          <tr>
+            <td>{{ r.category }}</td>
+            <td>{{ r.message[:240] }}{% if r.message|length > 240 %}…{% endif %}
+              <div class="small muted">{{ r.contact or '' }}</div>
+            </td>
+            <td class="nowrap">{{ fmt_datetime(r.sla_due_at) }}</td>
+            <td><span class="badge badge-{{ 'paid' if r.status == 'resolved' else 'overdue' }}">{{ r.status }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% else %}
+  <p class="muted">{{ t('support.none') }}</p>
+{% endif %}
+{% endblock %}

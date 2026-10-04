@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}{{ t('auth.signup') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<h1>{{ t('auth.signup') }}</h1>
+<p class="muted">{{ t('landing.trial_note') }}</p>
+
+{% if error %}
+  <div class="alert alert-error">{{ t(error) if t.has(error) else error }}</div>
+{% endif %}
+{% if error_message %}
+  <div class="alert alert-error">{{ error_message }}</div>
+{% endif %}
+
+<div class="card">
+  <form method="post" action="/signup">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="field">
+      <label for="name">{{ t('auth.name') }}</label>
+      <input type="text" id="name" name="name" required maxlength="200" value="{{ name or '' }}" autocomplete="name">
+    </div>
+    <div class="field">
+      <label for="org_name">{{ t('auth.org_name') }}</label>
+      <input type="text" id="org_name" name="org_name" maxlength="200" value="{{ org_name or '' }}" autocomplete="organization">
+      <p class="field-help">This appears on your invoices and in the messages your customers receive.</p>
+    </div>
+    <div class="field">
+      <label for="email">{{ t('auth.email') }}</label>
+      <input type="email" id="email" name="email" required maxlength="254" value="{{ email or '' }}" autocomplete="email" inputmode="email">
+    </div>
+    <div class="field">
+      <label for="password">{{ t('auth.password') }}</label>
+      <input type="password" id="pw_new" name="pw_new" required minlength="8" autocomplete="new-password">
+      <p class="field-help">At least 8 characters, with a letter and a number.</p>
+    </div>
+    <div class="field">
+      <label for="phone">{{ t('auth.phone') }}</label>
+      <input type="tel" id="phone" name="phone" inputmode="numeric" maxlength="16" autocomplete="tel"
+             placeholder="98765 43210">
+      <p class="field-help">Optional, but needed if you want to log in with a one-time code as well.</p>
+    </div>
+    <div class="field">
+      <label for="locale">{{ t('settings.locale') }}</label>
+      <select id="locale" name="locale">
+        {% for code, label in locales.items() %}
+          <option value="{{ code }}" {% if code == locale %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="field checkbox">
+      <input type="checkbox" id="accept_terms" name="accept_terms" value="1" required>
+      <label for="accept_terms">
+        {{ t('auth.terms_note') }}
+        <a href="/legal/terms">{{ t('legal.terms') }}</a> ·
+        <a href="/legal/privacy">{{ t('legal.privacy') }}</a>
+      </label>
+    </div>
+    <button class="btn btn-block" type="submit">{{ t('auth.signup') }}</button>
+  </form>
+</div>
+
+<p class="small muted">{{ t('auth.have_account') }} <a href="/login">{{ t('auth.login') }}</a></p>
+{% endblock %}

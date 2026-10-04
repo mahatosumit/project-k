@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}{{ t('inv.preview') }} — {{ invoice.invoice_number }}{% endblock %}
+{% block main_class %}wrap{% endblock %}
+
+{% block content %}
+<div class="spread no-print">
+  <h1>{{ t('inv.preview') }}</h1>
+  <a class="btn btn-secondary btn-small" href="/app/invoices/{{ invoice.id }}">Back to the invoice</a>
+</div>
+
+<p class="muted">
+  {{ invoice.invoice_number }} · {{ customer.name if customer else '' }} ·
+  {{ money(invoice.total_paise) }} · {{ t('inv.due') }} {{ fmt_date(invoice.due_date) }}
+</p>
+
+<div class="alert alert-warn no-print">
+  This is exactly what will be sent, on which date. The final notice at the bottom is never sent
+  automatically — you review and send it yourself.
+</div>
+
+{% for msg in messages %}
+  <section class="card">
+    <div class="spread">
+      <h2 style="font-size:1.05rem;margin:0">
+        {{ msg.step }}. {{ msg.stage.replace('_', ' ') }}
+      </h2>
+      <span>
+        <span class="badge badge-{{ 'overdue' if msg.requires_human == 'yes' else 'issued' }}">{{ msg.channel }}</span>
+        <span class="plan-pill">{{ msg.date }}</span>
+      </span>
+    </div>
+    <p class="small muted" style="margin-top:.5rem">
+      Tone: {{ msg.tone }}{% if msg.requires_human == 'yes' %} · needs your approval before sending{% endif %}
+    </p>
+    <div class="preview-box">{{ msg.body }}</div>
+  </section>
+{% endfor %}
+
+<p class="small muted">
+  Reminders stop automatically the moment the invoice is settled, or the customer replies with a
+  dispute, a payment claim, or a request for a plan.
+</p>
+{% endblock %}

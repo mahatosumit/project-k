@@ -1,0 +1,162 @@
+{% extends "base.html" %}
+{% block title %}{{ t('ops.title') }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<div class="spread">
+  <h1>{{ t('ops.title') }}</h1>
+  <a class="btn btn-secondary btn-small" href="/app/settings">{{ t('settings.business') }}</a>
+</div>
+
+<div class="alert alert-warn">
+  <strong>{{ t('ops.cert_hours') }}:</strong> {{ cert_in_hours }} {{ t('ops.hours') }}.
+  <strong>{{ t('ops.log_retention') }}:</strong> {{ log_retention_days }} {{ t('ops.days') }}.
+  A cyber incident must be reported to CERT-In within the first window; do not wait for a full
+  investigation. The runbook is in the project's docs.
+</div>
+
+<section class="grid grid-4 section">
+  <div class="stat"><div class="stat-label">Invoices</div><div class="stat-value">{{ counts.invoices }}</div></div>
+  <div class="stat"><div class="stat-label">Customers</div><div class="stat-value">{{ counts.customers }}</div></div>
+  <div class="stat"><div class="stat-label">Messages (7d)</div><div class="stat-value">{{ counts.notifications_7d }}</div></div>
+  <div class="stat"><div class="stat-label">{{ t('support.title') }}</div><div class="stat-value">{{ counts.support_open }}</div></div>
+</section>
+
+<section class="section card">
+  <h2>{{ t('ops.run_maintenance') }}</h2>
+  <p class="small muted">
+    Reconciliation re-asks the gateway about payments that never confirmed and rebuilds each
+    invoice's paid total from the payments table. Maintenance prunes expired counters and
+    audit rows past the retention window.
+  </p>
+  <div class="row">
+    <form method="post" action="/app/ops/run/reconcile">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-small" type="submit">{{ t('ops.run_reconcile') }}</button>
+    </form>
+    <form method="post" action="/app/ops/run/maintenance">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-secondary btn-small" type="submit">{{ t('ops.run_maintenance') }}</button>
+    </form>
+  </div>
+</section>
+
+<section class="section card">
+  <h2>{{ t('ops.webhooks') }}</h2>
+  {% if webhook_events %}
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>When</th><th>Provider</th><th>Event</th><th>Signature</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for e in webhook_events %}
+            <tr>
+              <td class="nowrap">{{ fmt_datetime(e.received_at) }}</td>
+              <td>{{ e.provider }}</td>
+              <td class="small">{{ e.event_type }}</td>
+              <td>{% if e.signature_valid %}<span class="badge badge-paid">valid</span>{% else %}<span class="badge badge-overdue">invalid</span>{% endif %}</td>
+              <td>{{ e.status }}{% if e.detail %}<div class="small muted">{{ e.detail[:80] }}</div>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="muted">{{ t('ops.no_events') }}</p>
+  {% endif %}
+</section>
+
+<section class="section card">
+  <h2>{{ t('ops.breaches') }}</h2>
+  <form method="post" action="/app/ops/breach" class="grid grid-3" style="align-items:end">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="field">
+      <label for="severity">Severity</label>
+      <select id="severity" name="severity">
+        <option value="low">low</option>
+        <option value="medium" selected>medium</option>
+        <option value="high">high</option>
+        <option value="critical">critical</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="affected">Data principals affected</label>
+      <input type="number" id="affected" name="affected" min="0" value="0">
+    </div>
+    <div class="field">
+      <button class="btn btn-small" type="submit">{{ t('ops.record_breach') }}</button>
+    </div>
+    <div class="field" style="grid-column:1/-1">
+      <label for="summary">What happened</label>
+      <textarea id="summary" name="summary" maxlength="4000" required></textarea>
+    </div>
+  </form>
+  {% if breaches %}
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Detected</th><th>Severity</th><th>Report due</th><th>Status</th></tr></thead>
+        <tbody>
+          {% for b in breaches %}
+            <tr>
+              <td class="nowrap">{{ fmt_datetime(b.detected_at) }}</td>
+              <td>{{ b.severity }}</td>
+              <td class="nowrap">{{ fmt_datetime(b.report_due_at) }}</td>
+              <td>{% if b.reported_to_cert_in_at %}<span class="badge badge-paid">reported</span>{% else %}<span class="badge badge-overdue">open</span>{% endif %}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</section>
+
+<section class="section card">
+  <h2>{{ t('ops.data_requests') }}</h2>
+  <p class="small muted">
+    An export or erasure request from a customer. Export produces a JSON file with everything we
+    hold about that person, which is also the honest answer to "what do you have on me?".
+  </p>
+  {% if data_requests %}
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Requested</th><th>Kind</th><th>Due</th><th>Status</th><th></th></tr></thead>
+        <tbody>
+          {% for d in data_requests %}
+            <tr>
+              <td class="nowrap">{{ fmt_datetime(d.requested_at) }}</td>
+              <td>{{ d.kind }}</td>
+              <td class="nowrap">{{ fmt_datetime(d.due_at) }}</td>
+              <td>{{ d.status }}</td>
+              <td>
+                {% if d.status != 'completed' %}
+                  <form method="post" action="/app/ops/data-request/{{ d.id }}/complete">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button class="btn btn-secondary btn-small" type="submit">Mark done</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% endif %}
+</section>
+
+<section class="section card">
+  <h2>{{ t('ops.audit') }}</h2>
+  <div class="table-scroll">
+    <table>
+      <thead><tr><th>When</th><th>Action</th><th>Actor</th><th>Detail</th></tr></thead>
+      <tbody>
+        {% for a in audit_rows %}
+          <tr>
+            <td class="nowrap">{{ fmt_datetime(a.created_at) }}</td>
+            <td class="small">{{ a.action }}</td>
+            <td class="small">{{ a.actor_type }}</td>
+            <td class="small muted">{{ (a.detail or '')[:120] }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endblock %}

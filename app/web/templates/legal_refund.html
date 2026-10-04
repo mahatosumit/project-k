@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}{{ t('legal.refund') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<h1>{{ t('legal.refund') }}</h1>
+<p class="muted small">{{ t('legal.updated') }}: {{ version }}</p>
+
+<h2>Free trial</h2>
+<p>
+  New accounts get 14 days with everything switched on and no card required. Nothing is charged
+  during the trial, so there is nothing to refund if you decide not to continue.
+</p>
+
+<h2>Subscription refunds</h2>
+<ul>
+  <li><strong>Within 14 days of a charge:</strong> if you have not used the paid period to send
+      reminders for more than a handful of invoices, write to us and we will refund the period in
+      full. No arguments.</li>
+  <li><strong>After 14 days:</strong> the remaining unused full months are refunded on a pro-rata
+      basis for annual plans. For monthly plans we do not refund a partly used month, but we will
+      stop the renewal so you are not charged again.</li>
+  <li><strong>Annual plan price advantage:</strong> if you cancel an annual plan after the first 14
+      days, the months already used are recalculated at the monthly rate, and the difference is
+      deducted from the refund. This is only so that cancelling early is not cheaper than having
+      taken the monthly plan.</li>
+  <li><strong>Our fault:</strong> if we charged you in error, or the service was unusable for a
+      sustained period and we could not fix it, the refund is full regardless of the above.</li>
+</ul>
+
+<h2>How to ask</h2>
+<p>
+  There is a refund request form on the billing page, so you do not have to find an email address.
+  It creates a tracked request. You will get an acknowledgement, and we aim to decide within
+  48 hours. Refunds are made to the original payment method through the payment gateway, and the
+  time the money takes to appear is set by your bank or UPI provider, typically 5–7 working days
+  after we process it.
+</p>
+
+<h2>What is not refunded</h2>
+<ul>
+  <li>Message costs charged to you directly by your WhatsApp or SMS provider. Those are paid to
+      that provider, not to us, and we cannot refund them.</li>
+  <li>Fees charged by your payment gateway on the payments your own customers made to you. That
+      money never came through us.</li>
+</ul>
+
+<h2>Cancelling</h2>
+<p>
+  Cancelling is one click from the billing page and takes effect for the next renewal. It never
+  takes away a period you have already paid for. Your data stays available for 90 days after the
+  paid period ends, and you can export it at any time in that window.
+</p>
+
+<h2>Complaints</h2>
+<p>
+  If a refund decision does not satisfy you, escalate it to the grievance officer listed in the
+  <a href="/legal/grievance">{{ t('legal.contact') }}</a> section. We will respond in writing with
+  reasons.
+</p>
+{% endblock %}

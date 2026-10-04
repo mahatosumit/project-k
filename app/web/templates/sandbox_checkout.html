@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}{{ t('sandbox.title') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<div class="alert alert-warn">{{ t('sandbox.note') }}</div>
+
+<div class="card">
+  <h1>{{ t('sandbox.title') }}</h1>
+  <p class="muted small">{{ invoice.invoice_number }} · {{ customer.name }}</p>
+  <p class="stat-label">{{ t('pay.amount_due') }}</p>
+  <div class="amount-hero">{{ money(amount_paise) }}</div>
+  <p class="mono small">order {{ order_id }}</p>
+
+  <form method="post" action="/pay/{{ invoice.id }}/{{ token }}/sandbox/{{ order_id }}/complete" style="margin-top:1rem">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="outcome" value="success">
+    <button class="btn btn-block" type="submit">{{ t('sandbox.success') }}</button>
+  </form>
+  <form method="post" action="/pay/{{ invoice.id }}/{{ token }}/sandbox/{{ order_id }}/complete" style="margin-top:.6rem">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <input type="hidden" name="outcome" value="failure">
+    <button class="btn btn-secondary btn-block" type="submit">{{ t('sandbox.failure') }}</button>
+  </form>
+</div>
+{% endblock %}

@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}{{ t('billing.title') }} — {{ app_name }}{% endblock %}
+
+{% block content %}
+<h1>{{ t('billing.title') }}</h1>
+
+{% if request.query_params.get('ok') == 'refund_requested' %}
+  <div class="alert alert-ok">Your refund request has been recorded with a reference number. We will respond within 48 hours.</div>
+{% endif %}
+{% if request.query_params.get('error') %}
+  <div class="alert alert-error">That could not be completed. Please try again or write to us.</div>
+{% endif %}
+
+<section class="card">
+  <h2>{{ t('billing.current') }}</h2>
+  {% if subscription %}
+    <p>
+      <span class="plan-pill">{{ subscription.plan_code.replace('_', ' ') }}</span>
+      <span class="badge badge-{{ 'paid' if subscription.status == 'active' else 'partly_paid' }}">{{ subscription.status }}</span>
+    </p>
+    <dl class="kv">
+      <dt>Price</dt><dd>{{ money(subscription.price_paise) }} / {{ 'month' if subscription.billing_cycle == 'monthly' else 'year' }}</dd>
+      {% if subscription.current_period_end %}
+        <dt>{{ t('billing.renews') }}</dt><dd>{{ fmt_date(subscription.current_period_end.date()) }}{% if subscription.cancel_at_period_end %} (will not renew){% endif %}</dd>
+      {% endif %}
+    </dl>
+    {% if not subscription.cancel_at_period_end %}
+      <form method="post" action="/billing/cancel" style="margin-top:.7rem">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn btn-secondary btn-small" type="submit">{{ t('billing.cancel') }}</button>
+      </form>
+    {% endif %}
+  {% else %}
+    <p class="muted">{{ t('billing.none') }}</p>
+    <p class="small muted">{{ t('billing.trial_note') }}</p>
+  {% endif %}
+</section>
+
+<section class="section">
+  <h2>{{ t('billing.choose') }}</h2>
+  <p class="small muted">{{ t('billing.prepaid_note') }}</p>
+  <div class="grid grid-3">
+    {% for key, plan in plans.items() %}
+      <form method="post" action="/billing/subscribe" class="price-card {% if key == 'starter_annual' %}featured{% endif %}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="plan" value="{{ key }}">
+        <div class="strong">{{ plan.label }}</div>
+        <div class="price-amount">{{ money(plan.price_paise) }}</div>
+        <div class="price-sub">{{ t('pricing.monthly') if plan.cycle == 'monthly' else t('pricing.annual') }}</div>
+        <ul>
+          <li>Unlimited invoices and customers</li>
+          <li>The full 9-step reminder ladder, WhatsApp + SMS</li>
+          <li>Your own gateway, your own money</li>
+          <li>Hindi and English messages</li>
+          <li>GST-compliant invoices with CGST/SGST/IGST</li>
+          <li>MSMED evidence pack</li>
+        </ul>
+        <button class="btn {% if org.gateway_provider %}{% else %}{% endif %}" type="submit">Choose</button>
+      </form>
+    {% endfor %}
+  </div>
+  <p class="small muted" style="margin-top:.8rem">
+    Mode: {{ payment_mode }} · provider: {{ provider }}. Prices are exclusive of GST where applicable.
+  </p>
+</section>
+
+{% if orders %}
+<section class="section">
+  <h2>{{ t('billing.orders') }}</h2>
+  <div class="card card-flat table-scroll">
+    <table>
+      <thead>
+        <tr><th>Date</th><th>{{ t('settings.provider') }}</th><th class="num">Amount</th><th>{{ t('billing.status') }}</th></tr>
+      </thead>
+      <tbody>
+        {% for o in orders %}
+          <tr>
+            <td class="nowrap">{{ fmt_datetime(o.created_at) }}</td>
+            <td>{{ o.provider }} · {{ o.mode }}</td>
+            <td class="num">{{ money(o.amount_paise) }}</td>
+            <td><span class="badge badge-{{ 'paid' if o.status == 'paid' else 'issued' }}">{{ o.status }}</span></td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+{% endif %}
+
+<section class="section card">
+  <h2>{{ t('billing.refund') }}</h2>
+  <p class="small muted">
+    If we have charged you and you want the money back, tell us why and we will act on it.
+    Our policy is in the <a href="/legal/refund">{{ t('legal.refund') }}</a>.
+  </p>
+  <form method="post" action="/billing/refund-request">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <div class="field">
+      <label for="refund_reason">{{ t('billing.refund_reason') }}</label>
+      <textarea id="refund_reason" name="reason" maxlength="2000"></textarea>
+    </div>
+    <button class="btn btn-secondary" type="submit">{{ t('billing.refund') }}</button>
+  </form>
+</section>
+{% endblock %}

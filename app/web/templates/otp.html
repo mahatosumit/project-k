@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}{{ t('auth.send_otp') }} — {{ app_name }}{% endblock %}
+{% block main_class %}wrap narrow{% endblock %}
+
+{% block content %}
+<h1>{{ t('auth.send_otp') }}</h1>
+
+{% if error %}
+  <div class="alert alert-error">{{ t(error) if t.has(error) else error }}</div>
+{% endif %}
+{% if dev_code %}
+  <div class="alert alert-warn">
+    Development mode: no SMS provider is configured, so the code is shown here —
+    <span class="mono strong">{{ dev_code }}</span>
+  </div>
+{% endif %}
+
+<div class="card">
+  {% if step == 'verify' %}
+    <form method="post" action="/otp/verify">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <input type="hidden" name="phone" value="{{ phone }}">
+      <div class="field">
+        <label for="code">{{ t('auth.otp') }}</label>
+        <input type="text" id="code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6"
+               autocomplete="one-time-code" required autofocus>
+      </div>
+      <p class="field-help">{{ t('auth.phone') }}: {{ phone }}</p>
+      <button class="btn btn-block" type="submit">{{ t('auth.login') }}</button>
+    </form>
+  {% else %}
+    <form method="post" action="/otp/request">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="field">
+        <label for="phone">{{ t('auth.phone') }}</label>
+        <input type="tel" id="phone" name="phone" inputmode="numeric" maxlength="16" required autofocus
+               placeholder="98765 43210" value="{{ phone or '' }}">
+      </div>
+      <button class="btn btn-block" type="submit">{{ t('auth.send_otp') }}</button>
+    </form>
+  {% endif %}
+</div>
+
+<p class="small muted"><a href="/login">{{ t('auth.login') }}</a></p>
+{% endblock %}
